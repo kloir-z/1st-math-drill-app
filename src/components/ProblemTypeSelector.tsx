@@ -1,14 +1,17 @@
+// components/ProblemTypeSelector.tsx
 import React from 'react';
 import { ProblemType, ProblemTypeLabels } from '../types/mathProblems';
 
 interface ProblemTypeSelectorProps {
     selectedType: ProblemType | null;
     onSelectType: (type: ProblemType) => void;
+    onShowHistory: () => void;
 }
 
 export const ProblemTypeSelector: React.FC<ProblemTypeSelectorProps> = ({
     selectedType,
     onSelectType,
+    onShowHistory,
 }) => {
     return (
         <div className="space-y-4">
@@ -20,15 +23,21 @@ export const ProblemTypeSelector: React.FC<ProblemTypeSelectorProps> = ({
                     <button
                         key={type}
                         onClick={() => onSelectType(type)}
-                        className={` p-4 rounded-lg text-lg font-bold transition-colors ${selectedType === type
+                        className={`p-4 rounded-lg text-lg font-bold transition-colors ${selectedType === type
                             ? 'bg-blue-500 text-white'
                             : 'bg-white text-blue-500 border-2 border-blue-500 hover:bg-blue-50'
-                            }
-            `}
+                            }`}
                     >
                         {ProblemTypeLabels[type]}
                     </button>
                 ))}
+
+                <button
+                    onClick={onShowHistory}
+                    className="p-4 rounded-lg text-lg font-bold bg-green-500 text-white hover:bg-green-600 transition-colors"
+                >
+                    がくしゅう きろくを みる
+                </button>
             </div>
         </div>
     );

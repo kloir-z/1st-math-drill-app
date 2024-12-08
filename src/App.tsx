@@ -1,15 +1,22 @@
+// App.tsx
 import { useState } from 'react';
 import './App.css';
 import { ProblemTypeSelector } from './components/ProblemTypeSelector';
 import { MathProblem } from './components/MathProblem';
+import { LearningHistory } from './components/LearningHistory';
 import { ProblemType } from './types/mathProblems';
 
 function App() {
   const [selectedProblemType, setSelectedProblemType] = useState<ProblemType | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
 
   const handleProblemTypeSelect = (type: ProblemType) => {
     setSelectedProblemType(type);
   };
+
+  if (showHistory) {
+    return <LearningHistory onClose={() => setShowHistory(false)} />;
+  }
 
   return (
     <div className="min-h-screen min-w-screen bg-gray-50 select-none">
@@ -18,6 +25,7 @@ function App() {
           <ProblemTypeSelector
             selectedType={selectedProblemType}
             onSelectType={handleProblemTypeSelect}
+            onShowHistory={() => setShowHistory(true)}
           />
         ) : (
           <MathProblem problemType={selectedProblemType} />

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MathProblem as MathProblemType, ProblemType } from '../types/mathProblems';
 import { allProblems, calculateAnswer } from '../data/mathProblems';
 import { NumberPad } from './NumberPad';
+import { useLearningHistory } from '../contexts/LearningHistoryContext';
 
 interface MathProblemProps {
   problemType: ProblemType;
@@ -14,6 +15,12 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
+
+  // 学習履歴の Context を使用
+  const { recordAttempt } = useLearningHistory();
+
+  // 問題開始時刻を記録
+  const problemStartTime = useRef<number>(Date.now());
 
   useEffect(() => {
     const handlePopState = () => {
@@ -37,7 +44,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
   }, [problemType]);
 
   // 次の問題を取得する関数
-  const getNextProblem = () => {
+  const getNextProblem = useCallback(() => {
     if (remainingProblems.length === 0) {
       const shuffled = shuffleProblems();
       setRemainingProblems(shuffled.slice(1));
@@ -51,7 +58,8 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
     setUserInput('');
     setIsCorrect(null);
     setIsAnswerVisible(false);
-  };
+    problemStartTime.current = Date.now();
+  }, [remainingProblems, shuffleProblems]);
 
   // 数字がクリックされたときの処理
   const handleNumberClick = (num: number) => {
@@ -73,6 +81,12 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
     const isAnswerCorrect = parseInt(userInput) === correctAnswer;
     setIsCorrect(isAnswerCorrect);
 
+    // 解答時間を計算（ミリ秒）
+    const answeredTime = Date.now() - problemStartTime.current;
+
+    // 学習履歴に記録
+    recordAttempt(currentProblem, isAnswerCorrect, answeredTime);
+
     if (isAnswerCorrect) {
       setIsAnswerVisible(true);
       setTimeout(() => {
@@ -81,11 +95,22 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
     }
   };
 
+  // 答えを表示する処理
+  const handleShowAnswer = () => {
+    if (!currentProblem) return;
+
+    setIsAnswerVisible(true);
+    // 不正解として記録
+    const answeredTime = Date.now() - problemStartTime.current;
+    recordAttempt(currentProblem, false, answeredTime);
+  };
+
   useEffect(() => {
     const shuffled = shuffleProblems();
     setRemainingProblems(shuffled.slice(1));
     setCurrentProblem(shuffled[0]);
     setCurrentProblemIndex(1);
+    problemStartTime.current = Date.now();
   }, [problemType, shuffleProblems]);
 
   if (!currentProblem) {
@@ -127,7 +152,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
         {/* 答えを見るボタン */}
         <div className="mt-4">
           <button
-            onClick={() => setIsAnswerVisible(true)}
+            onClick={handleShowAnswer}
             className="w-full p-4 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 
               transition-colors disabled:bg-gray-300 select-none"
             disabled={isAnswerVisible || isCorrect === true}
