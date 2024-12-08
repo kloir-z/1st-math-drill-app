@@ -87,6 +87,8 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
       setTimeout(() => {
         getNextProblem();
       }, 1500);
+    } else {
+      setUserInput('');
     }
   };
 
