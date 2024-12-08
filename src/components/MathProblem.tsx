@@ -15,6 +15,17 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
 
+  useEffect(() => {
+    const handlePopState = () => {
+      window.history.back();
+    };
+    window.history.pushState(null, '', window.location.pathname);
+    window.addEventListener('popstate', handlePopState);
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, []);
+
   // 問題をシャッフルする関数
   const shuffleProblems = useCallback(() => {
     const problems = [...allProblems[problemType]];
@@ -31,11 +42,11 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
       const shuffled = shuffleProblems();
       setRemainingProblems(shuffled.slice(1));
       setCurrentProblem(shuffled[0]);
-      setCurrentProblemIndex(1); // 最初から始める
+      setCurrentProblemIndex(1);
     } else {
       setCurrentProblem(remainingProblems[0]);
       setRemainingProblems(remainingProblems.slice(1));
-      setCurrentProblemIndex(prev => prev + 1); // インクリメント
+      setCurrentProblemIndex(prev => prev + 1);
     }
     setUserInput('');
     setIsCorrect(null);
@@ -44,7 +55,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
 
   // 数字がクリックされたときの処理
   const handleNumberClick = (num: number) => {
-    if (userInput.length < 2) { // 2桁までの入力に制限
+    if (userInput.length < 2) {
       setUserInput(prev => prev + num.toString());
     }
   };
@@ -63,12 +74,10 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
     setIsCorrect(isAnswerCorrect);
 
     if (isAnswerCorrect) {
-      // 正解の場合は答えを表示
       setIsAnswerVisible(true);
-      // 少し待ってから次の問題へ
       setTimeout(() => {
         getNextProblem();
-      }, 1500); // 1.5秒後に次の問題へ
+      }, 1500);
     }
   };
 
@@ -76,7 +85,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
     const shuffled = shuffleProblems();
     setRemainingProblems(shuffled.slice(1));
     setCurrentProblem(shuffled[0]);
-    setCurrentProblemIndex(1); // 初期化時は1問目
+    setCurrentProblemIndex(1);
   }, [problemType, shuffleProblems]);
 
   if (!currentProblem) {
@@ -84,27 +93,24 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-8">
-      <div className="bg-white p-8 rounded-lg shadow-lg">
+    <div className="flex items-center justify-center min-h-[80vh]">
+      <div className="w-full max-w-md bg-white p-4 rounded-lg shadow-lg">
         {/* 問題番号 */}
-        <div className="text-lg text-gray-600 text-center mb-2">
+        <div className="text-lg text-gray-600 text-center mb-2 select-none">
           {currentProblemIndex}/{allProblems[problemType].length}もんめ
         </div>
 
         {/* 問題表示 */}
-        <div className="text-5xl text-center font-bold mb-4 text-gray-800">
+        <div className="text-5xl text-center font-bold mb-4 text-gray-800 select-none">
           {currentProblem.num1} {currentProblem.operator} {currentProblem.num2} =
           {isAnswerVisible || (isCorrect === true) ? calculateAnswer(currentProblem) : '?'}
         </div>
 
-        {/* 固定高さのメッセージエリア */}
+        {/* メッセージエリア */}
         <div className="h-12 flex items-center justify-center mb-4">
           {isCorrect !== null && (
-            <div
-              className={`text-2xl font-bold ${isCorrect ? 'text-green-500' : 'text-red-500'} 
-                transition-opacity duration-200 ease-in-out
-              `}
-            >
+            <div className={`text-2xl font-bold ${isCorrect ? 'text-green-500' : 'text-red-500'} 
+              transition-opacity duration-200 ease-in-out select-none`}>
               {isCorrect ? 'せいかい！' : 'ざんねん...'}
             </div>
           )}
@@ -123,7 +129,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
           <button
             onClick={() => setIsAnswerVisible(true)}
             className="w-full p-4 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 
-              transition-colors disabled:bg-gray-300"
+              transition-colors disabled:bg-gray-300 select-none"
             disabled={isAnswerVisible || isCorrect === true}
           >
             こたえを みる

@@ -22,28 +22,39 @@ export const NumberPad: React.FC<NumberPadProps> = ({
                 {currentInput || '_'}
             </div>
 
-            {/* 数字キーパッド */}
+            {/* 数字キーパッドと操作ボタン */}
             <div className="grid grid-cols-3 gap-2">
-                {numbers.map((num) => (
+                {/* 数字 1-9 */}
+                {numbers.slice(0, 9).map((num) => (
                     <button
                         key={num}
                         onClick={() => onNumberClick(num)}
-                        className={` p-4 text-2xl font-bold rounded-lg ${num === 0 ? 'col-span-3' : ''} bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors duration-200 `}
+                        className="py-3 px-2 md:p-4 text-2xl font-bold rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors duration-200 flex items-center justify-center"
                     >
                         {num}
                     </button>
                 ))}
 
+                {/* けす */}
                 <button
                     onClick={onDelete}
-                    className="col-span-2 p-4 text-xl font-bold rounded-lg bg-yellow-100 hover:bg-yellow-200 text-yellow-800 transition-colors duration-200"
+                    className="py-3 px-2 md:p-4 text-lg md:text-xl font-bold rounded-lg bg-yellow-100 hover:bg-yellow-200 text-yellow-800 transition-colors duration-200 flex items-center justify-center"
                 >
                     けす
                 </button>
 
+                {/* 0 */}
+                <button
+                    onClick={() => onNumberClick(0)}
+                    className="py-3 px-2 md:p-4 text-2xl font-bold rounded-lg bg-blue-100 hover:bg-blue-200 text-blue-800 transition-colors duration-200 flex items-center justify-center"
+                >
+                    0
+                </button>
+
+                {/* かくにん */}
                 <button
                     onClick={onSubmit}
-                    className="p-4 text-xl font-bold rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors duration-200"
+                    className="py-3 px-2 md:p-4 text-lg md:text-xl font-bold rounded-lg bg-green-500 hover:bg-green-600 text-white transition-colors duration-200 flex items-center justify-center"
                 >
                     かくにん
                 </button>

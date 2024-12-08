@@ -12,27 +12,17 @@ function App() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8 bg-gray-50">
-      <h1 className="text-3xl font-bold text-center mb-8 text-gray-800">
-        けいさん れんしゅう
-      </h1>
-
-      {!selectedProblemType ? (
-        <ProblemTypeSelector
-          selectedType={selectedProblemType}
-          onSelectType={handleProblemTypeSelect}
-        />
-      ) : (
-        <div>
-          <button
-            onClick={() => setSelectedProblemType(null)}
-            className="mb-4 px-4 py-2 text-blue-500 hover:text-blue-600 transition-colors"
-          >
-            ← もどる
-          </button>
+    <div className="min-h-screen min-w-screen bg-gray-50 select-none">
+      <div className="container mx-auto px-4 py-4 md:px-0 md:py-8 max-w-2xl">
+        {!selectedProblemType ? (
+          <ProblemTypeSelector
+            selectedType={selectedProblemType}
+            onSelectType={handleProblemTypeSelect}
+          />
+        ) : (
           <MathProblem problemType={selectedProblemType} />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
