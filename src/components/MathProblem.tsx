@@ -8,7 +8,7 @@ import { generateProblemId } from '../types/learningHistory';
 
 interface MathProblemProps {
   problemType: ProblemType;
-  onBack: () => void;  // 戻るボタンのハンドラーを追加
+  onBack: () => void;
 }
 
 export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack }) => {
@@ -45,7 +45,11 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
 
   // 日付をフォーマットする関数
   const formatDate = (date: Date) => {
-    return `${date.getMonth() + 1}がつ${date.getDate()}にち`;
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const weekdays = ['日', '月', '火', '水', '木', '金', '土'];
+    const weekday = weekdays[date.getDay()];
+    return `${month}月${day}日(${weekday})`;
   };
 
   const getNextProblem = useCallback(() => {
@@ -113,7 +117,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
   const dailyCount = getDailyCount(problemType);
   const today = new Date();
   const displayDate = formatDate(today);
-  const problemNumber = dailyCount.count + 1;  // カウントを1から始める
+  const problemNumber = dailyCount.count + 1;
 
   return (
     <div className="flex items-center justify-center min-h-[80vh]">

@@ -1,5 +1,4 @@
-// types/learningHistory.ts
-import { MathProblem, ProblemType } from './mathProblems';
+import { MathProblem, Operator, ProblemType } from './mathProblems';
 
 // 1回の解答の記録
 export interface AttemptRecord {
@@ -22,17 +21,6 @@ export interface ProblemTypeStats {
     lastAttemptDate: string | null;  // ISO形式の日時文字列
 }
 
-// LocalStorage用のキー
-export const LEARNING_HISTORY_STORAGE_KEY = 'math-learning-history';
-
-// 問題IDを生成するユーティリティ関数
-export const generateProblemId = (problem: MathProblem): string => {
-    return `${problem.num1}${problem.operator}${problem.num2}`;
-};
-
-// 最大解答時間（ミリ秒）
-export const MAX_ANSWER_TIME = 60000; // 60秒
-
 export interface ProblemStats {
     attemptCount: number;
     lastAttempted: string | null;  // ISO形式の日時文字列
@@ -43,10 +31,40 @@ export interface DailyCount {
     count: number;
 }
 
+export interface DailyProblemRecord {
+    problemId: string;
+    type: ProblemType;
+    timestamp: string;
+    isCorrect: boolean;
+    answeredTime: number;
+    num1: number;
+    num2: number;
+    operator: Operator;
+}
+
+export interface DailyRecord {
+    date: string;  // YYYY-MM-DD形式
+    problemCounts: Record<ProblemType, number>;
+    incorrectProblems: DailyProblemRecord[];
+    slowProblems: DailyProblemRecord[];  // 平均より30%以上時間がかかった問題
+}
+
 export interface LearningHistory {
     problemHistories: Record<string, ProblemHistory>;
     problemTypeStats: Record<ProblemType, ProblemTypeStats>;
     problemStats: Record<string, ProblemStats>;
     lastUpdated: string;
-    dailyCounts: Record<ProblemType, DailyCount>;  // ProblemTypeごとの日次カウント
+    dailyCounts: Record<ProblemType, DailyCount>;
+    dailyRecords: Record<string, DailyRecord>;
 }
+
+// LocalStorage用のキー
+export const LEARNING_HISTORY_STORAGE_KEY = 'math-learning-history';
+
+// 問題IDを生成するユーティリティ関数
+export const generateProblemId = (problem: MathProblem): string => {
+    return `${problem.num1}${problem.operator}${problem.num2}`;
+};
+
+// 最大解答時間（ミリ秒）
+export const MAX_ANSWER_TIME = 60000; // 60秒

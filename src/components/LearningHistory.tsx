@@ -1,7 +1,10 @@
 // components/LearningHistory.tsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useLearningHistory } from '../hooks/useLearningHistory';
 import { ProblemType, ProblemTypeLabels } from '../types/mathProblems';
+import { ProblemStats } from './ProblemStats';
+import { DailyLearningRecord } from './DailyLearningRecord';
+import PastRecords from './PastRecords';
 
 interface LearningHistoryProps {
     onClose: () => void;
@@ -9,6 +12,7 @@ interface LearningHistoryProps {
 
 export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => {
     const { history, clearHistory } = useLearningHistory();
+    const [showPastRecords, setShowPastRecords] = useState(false);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -20,6 +24,10 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
             minute: '2-digit',
         }).format(date);
     };
+
+    if (showPastRecords) {
+        return <PastRecords onClose={() => setShowPastRecords(false)} />;
+    }
 
     // 問題種類ごとの統計を表示
     const renderProblemTypeStats = (type: ProblemType) => {
@@ -76,7 +84,7 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
                 }));
             })
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-            .slice(0, 10);
+            .slice(0, 100);
 
         return (
             <div className="bg-white rounded-lg p-4 shadow-md">
@@ -115,6 +123,12 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
                     <h2 className="text-lg md:text-xl font-bold">がくしゅう きろく</h2>
                     <div className="flex flex-wrap gap-2">
                         <button
+                            onClick={() => setShowPastRecords(true)}
+                            className="px-3 py-2 md:px-4 md:py-2 bg-blue-500 text-white text-sm md:text-base rounded-lg hover:bg-blue-600 transition-colors"
+                        >
+                            かこの きろく
+                        </button>
+                        <button
                             onClick={clearHistory}
                             className="px-3 py-2 md:px-4 md:py-2 bg-red-500 text-white text-sm md:text-base rounded-lg hover:bg-red-600 transition-colors"
                         >
@@ -129,11 +143,16 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
                     </div>
                 </div>
 
+                <DailyLearningRecord />
+
+                <ProblemStats />
+
+                {renderRecentHistory()}
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {Object.values(ProblemType).map(type => renderProblemTypeStats(type))}
                 </div>
 
-                {renderRecentHistory()}
             </div>
         </div>
     );

@@ -9,7 +9,8 @@ import {
     DailyCount,
     LEARNING_HISTORY_STORAGE_KEY,
     generateProblemId,
-    MAX_ANSWER_TIME
+    MAX_ANSWER_TIME,
+    DailyProblemRecord
 } from '../types/learningHistory';
 import { MathProblem, ProblemType } from '../types/mathProblems';
 import { LearningHistoryContext } from '../contexts/LearningHistoryContext';
@@ -21,13 +22,20 @@ const createDefaultProblemTypeStats = (): ProblemTypeStats => ({
     lastAttemptDate: null,
 });
 
+const getJapanDate = (): string => {
+    // 日本時間のタイムゾーンオフセットを設定（UTC+9）
+    const now = new Date();
+    const jpTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
+    return jpTime.toISOString().split('T')[0];
+};
+
 const createDefaultDailyCount = (today: string): DailyCount => ({
     date: today,
     count: 0
 });
 
 const createDefaultLearningHistory = (): LearningHistory => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getJapanDate(); // 修正
     return {
         problemHistories: {},
         problemTypeStats: {
@@ -43,7 +51,8 @@ const createDefaultLearningHistory = (): LearningHistory => {
             [ProblemType.SubtractionNoBorrow]: createDefaultDailyCount(today),
             [ProblemType.AdditionWithCarry]: createDefaultDailyCount(today),
             [ProblemType.SubtractionWithBorrow]: createDefaultDailyCount(today),
-        }
+        },
+        dailyRecords: {}
     };
 };
 
@@ -54,7 +63,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
             try {
                 const parsed = JSON.parse(stored);
                 // 日付が変わっていたら dailyCounts をリセット
-                const today = new Date().toISOString().split('T')[0];
+                const today = getJapanDate(); // 修正
                 if (parsed.dailyCounts[ProblemType.AdditionNoCarry].date !== today) {
                     Object.keys(parsed.dailyCounts).forEach(type => {
                         parsed.dailyCounts[type] = createDefaultDailyCount(today);
@@ -79,7 +88,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
     ) => {
         const problemId = generateProblemId(problem);
         const timestamp = new Date().toISOString();
-        const today = timestamp.split('T')[0];
+        const today = getJapanDate();
 
         const cappedAnsweredTime = Math.min(answeredTime, MAX_ANSWER_TIME);
 
@@ -109,20 +118,54 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                 lastAttempted: null
             };
 
-            const newProblemStats: ProblemStats = {
-                attemptCount: existingStats.attemptCount + 1,
-                lastAttempted: timestamp
+            // 日次記録の更新
+            const currentDailyRecord = prev.dailyRecords[today] || {
+                date: today,
+                problemCounts: Object.values(ProblemType).reduce((acc, type) => ({
+                    ...acc,
+                    [type]: 0
+                }), {}),
+                incorrectProblems: [],
+                slowProblems: []
             };
 
-            const typeStats = prev.problemTypeStats[problem.type];
-            const newTypeStats: ProblemTypeStats = {
-                totalAttempts: typeStats.totalAttempts + 1,
-                correctAttempts: typeStats.correctAttempts + (isCorrect ? 1 : 0),
+            const newProblemCounts = {
+                ...currentDailyRecord.problemCounts,
+                [problem.type]: (currentDailyRecord.problemCounts[problem.type] || 0) + 1
+            };
+
+            const problemRecord: DailyProblemRecord = {
+                problemId,
+                type: problem.type,
+                timestamp,
+                isCorrect,
+                answeredTime: cappedAnsweredTime,
+                num1: problem.num1,
+                num2: problem.num2,
+                operator: problem.operator
+            };
+
+            const newTypeStats = {
+                ...prev.problemTypeStats[problem.type],
+                totalAttempts: prev.problemTypeStats[problem.type].totalAttempts + 1,
+                correctAttempts: prev.problemTypeStats[problem.type].correctAttempts + (isCorrect ? 1 : 0),
                 averageAnswerTime:
-                    (typeStats.averageAnswerTime * typeStats.totalAttempts + cappedAnsweredTime) /
-                    (typeStats.totalAttempts + 1),
+                    (prev.problemTypeStats[problem.type].averageAnswerTime * prev.problemTypeStats[problem.type].totalAttempts + cappedAnsweredTime) /
+                    (prev.problemTypeStats[problem.type].totalAttempts + 1),
                 lastAttemptDate: timestamp,
             };
+
+            // 不正解の場合、incorrectProblemsに追加
+            const newIncorrectProblems = [...currentDailyRecord.incorrectProblems];
+            if (!isCorrect) {
+                newIncorrectProblems.push(problemRecord);
+            }
+
+            // 時間のかかった問題の判定（その型の平均時間より30%以上遅い）
+            const newSlowProblems = [...currentDailyRecord.slowProblems];
+            if (cappedAnsweredTime > newTypeStats.averageAnswerTime * 1.3) {
+                newSlowProblems.push(problemRecord);
+            }
 
             return {
                 ...prev,
@@ -139,16 +182,30 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                 },
                 problemStats: {
                     ...prev.problemStats,
-                    [problemId]: newProblemStats,
+                    [problemId]: {
+                        attemptCount: existingStats.attemptCount + 1,
+                        lastAttempted: timestamp
+                    },
                 },
                 lastUpdated: timestamp,
                 dailyCounts: {
                     ...prev.dailyCounts,
                     [problem.type]: newDailyCount,
+                },
+                dailyRecords: {
+                    ...prev.dailyRecords,
+                    [today]: {
+                        date: today,
+                        problemCounts: newProblemCounts,
+                        incorrectProblems: newIncorrectProblems,
+                        slowProblems: newSlowProblems
+                    }
                 }
             };
         });
     };
+
+
 
     const getProblemHistory = (problemId: string): ProblemHistory | null => {
         return history.problemHistories[problemId] || null;
