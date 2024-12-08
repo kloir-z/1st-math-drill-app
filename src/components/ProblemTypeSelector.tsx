@@ -16,7 +16,7 @@ export const ProblemTypeSelector: React.FC<ProblemTypeSelectorProps> = ({
     return (
         <div className="space-y-4">
             <h2 className="text-xl font-bold text-center mb-6">
-                れんしゅうしたい けいさんを えらんでね
+                けいさんカードアプリ
             </h2>
             <div className="grid grid-cols-1 gap-4 max-w-md mx-auto">
                 {Object.values(ProblemType).map((type) => (

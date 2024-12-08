@@ -1,90 +1,85 @@
+// components/MathProblem.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MathProblem as MathProblemType, ProblemType } from '../types/mathProblems';
 import { allProblems, calculateAnswer } from '../data/mathProblems';
 import { NumberPad } from './NumberPad';
-import { useLearningHistory } from '../contexts/LearningHistoryContext';
+import { useLearningHistory } from '../hooks/useLearningHistory';
+import { generateProblemId } from '../types/learningHistory';
 
 interface MathProblemProps {
   problemType: ProblemType;
+  onBack: () => void;  // 戻るボタンのハンドラーを追加
 }
 
-export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
+export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack }) => {
   const [currentProblem, setCurrentProblem] = useState<MathProblemType | null>(null);
-  const [remainingProblems, setRemainingProblems] = useState<MathProblemType[]>([]);
   const [userInput, setUserInput] = useState('');
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
-  const [currentProblemIndex, setCurrentProblemIndex] = useState(0);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
-  // 学習履歴の Context を使用
-  const { recordAttempt } = useLearningHistory();
-
-  // 問題開始時刻を記録
+  const { recordAttempt, getProblemStats, getDailyCount } = useLearningHistory();
   const problemStartTime = useRef<number>(Date.now());
 
-  useEffect(() => {
-    const handlePopState = () => {
-      window.history.back();
-    };
-    window.history.pushState(null, '', window.location.pathname);
-    window.addEventListener('popstate', handlePopState);
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
-  }, []);
+  // 問題選択のロジック
+  const selectNextProblem = useCallback(() => {
+    const problems = allProblems[problemType];
 
-  // 問題をシャッフルする関数
-  const shuffleProblems = useCallback(() => {
-    const problems = [...allProblems[problemType]];
-    for (let i = problems.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [problems[i], problems[j]] = [problems[j], problems[i]];
-    }
-    return problems;
-  }, [problemType]);
+    // 各問題の解答回数を取得
+    const problemCounts = problems.map(problem => ({
+      problem,
+      stats: getProblemStats(generateProblemId(problem))
+    }));
 
-  // 次の問題を取得する関数
+    // 最小の解答回数を見つける
+    const minCount = Math.min(...problemCounts.map(p => p.stats.attemptCount));
+
+    // 最小解答回数の問題だけをフィルタリング
+    const candidateProblems = problemCounts.filter(p => p.stats.attemptCount === minCount);
+
+    // ランダムに1つ選択
+    const selectedProblem = candidateProblems[Math.floor(Math.random() * candidateProblems.length)].problem;
+
+    return selectedProblem;
+  }, [problemType, getProblemStats]);
+
+  // 日付をフォーマットする関数
+  const formatDate = (date: Date) => {
+    return `${date.getMonth() + 1}がつ${date.getDate()}にち`;
+  };
+
   const getNextProblem = useCallback(() => {
-    if (remainingProblems.length === 0) {
-      const shuffled = shuffleProblems();
-      setRemainingProblems(shuffled.slice(1));
-      setCurrentProblem(shuffled[0]);
-      setCurrentProblemIndex(1);
-    } else {
-      setCurrentProblem(remainingProblems[0]);
-      setRemainingProblems(remainingProblems.slice(1));
-      setCurrentProblemIndex(prev => prev + 1);
-    }
+    if (isTransitioning) return;
+    setIsTransitioning(true);
+
+    const nextProblem = selectNextProblem();
+    setCurrentProblem(nextProblem);
     setUserInput('');
     setIsCorrect(null);
     setIsAnswerVisible(false);
     problemStartTime.current = Date.now();
-  }, [remainingProblems, shuffleProblems]);
 
-  // 数字がクリックされたときの処理
+    setIsTransitioning(false);
+  }, [selectNextProblem, isTransitioning]);
+
   const handleNumberClick = (num: number) => {
     if (userInput.length < 2) {
       setUserInput(prev => prev + num.toString());
     }
   };
 
-  // 入力を削除する処理
   const handleDelete = () => {
     setUserInput('');
   };
 
-  // 答え合わせの処理
   const handleSubmit = () => {
-    if (!currentProblem || !userInput) return;
+    if (!currentProblem || !userInput || isTransitioning) return;
 
     const correctAnswer = calculateAnswer(currentProblem);
     const isAnswerCorrect = parseInt(userInput) === correctAnswer;
     setIsCorrect(isAnswerCorrect);
 
-    // 解答時間を計算（ミリ秒）
     const answeredTime = Date.now() - problemStartTime.current;
-
-    // 学習履歴に記録
     recordAttempt(currentProblem, isAnswerCorrect, answeredTime);
 
     if (isAnswerCorrect) {
@@ -95,34 +90,43 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType }) => {
     }
   };
 
-  // 答えを表示する処理
   const handleShowAnswer = () => {
-    if (!currentProblem) return;
+    if (!currentProblem || isTransitioning) return;
 
     setIsAnswerVisible(true);
-    // 不正解として記録
     const answeredTime = Date.now() - problemStartTime.current;
-    recordAttempt(currentProblem, false, answeredTime);
+    recordAttempt(currentProblem, false, answeredTime);  // 答えを見た場合は不正解として記録
   };
 
   useEffect(() => {
-    const shuffled = shuffleProblems();
-    setRemainingProblems(shuffled.slice(1));
-    setCurrentProblem(shuffled[0]);
-    setCurrentProblemIndex(1);
-    problemStartTime.current = Date.now();
-  }, [problemType, shuffleProblems]);
+    if (!currentProblem) {
+      getNextProblem();
+    }
+  }, [problemType, getNextProblem, currentProblem]);
 
   if (!currentProblem) {
     return <div className="text-gray-800">Loading...</div>;
   }
 
+  const dailyCount = getDailyCount(problemType);
+  const today = new Date();
+  const displayDate = formatDate(today);
+  const problemNumber = dailyCount.count + 1;  // カウントを1から始める
+
   return (
     <div className="flex items-center justify-center min-h-[80vh]">
       <div className="w-full max-w-md bg-white p-4 rounded-lg shadow-lg">
-        {/* 問題番号 */}
-        <div className="text-lg text-gray-600 text-center mb-2 select-none">
-          {currentProblemIndex}/{allProblems[problemType].length}もんめ
+        {/* 戻るボタンと問題番号を横並びに */}
+        <div className="flex justify-between items-center mb-2">
+          <button
+            onClick={onBack}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
+          >
+            ←もどる
+          </button>
+          <div className="text-lg text-gray-600 select-none">
+            {displayDate} {problemNumber}もんめ
+          </div>
         </div>
 
         {/* 問題表示 */}

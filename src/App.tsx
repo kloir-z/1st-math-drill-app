@@ -14,6 +14,10 @@ function App() {
     setSelectedProblemType(type);
   };
 
+  const handleBack = () => {
+    setSelectedProblemType(null);
+  };
+
   if (showHistory) {
     return <LearningHistory onClose={() => setShowHistory(false)} />;
   }
@@ -28,7 +32,10 @@ function App() {
             onShowHistory={() => setShowHistory(true)}
           />
         ) : (
-          <MathProblem problemType={selectedProblemType} />
+          <MathProblem
+            problemType={selectedProblemType}
+            onBack={handleBack}
+          />
         )}
       </div>
     </div>
