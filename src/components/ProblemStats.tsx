@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import _ from 'lodash';
 import { useLearningHistory } from '../hooks/useLearningHistory';
-import { ProblemType } from '../types/mathProblems';
+import { ProblemType, ProblemTypeLabels } from '../types/mathProblems';
 import { allProblems } from '../data/mathProblems';
 
 interface ProblemMedianTime {
@@ -25,6 +25,7 @@ const TYPE_COLORS = {
 export const ProblemStats = () => {
     const { history } = useLearningHistory();
     const [sortType, setSortType] = useState<SortType>('time');
+    const [selectedType, setSelectedType] = useState<ProblemType | 'all'>('all');
 
     const calculateMedianTimes = (): ProblemMedianTime[] => {
         let stats = Object.entries(history.problemHistories)
@@ -57,6 +58,11 @@ export const ProblemStats = () => {
                 };
             })
             .filter(stat => stat.attemptCount >= 1);
+
+        // Filter by selected type
+        if (selectedType !== 'all') {
+            stats = stats.filter(stat => stat.type === selectedType);
+        }
 
         if (sortType === 'time') {
             stats = _.orderBy(stats, 'medianTime', 'desc');
@@ -93,30 +99,66 @@ export const ProblemStats = () => {
 
     return (
         <div className="bg-white rounded-lg p-4 shadow-md">
-            <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-bold">かいとうじかん</h3>
-                <div className="flex gap-2">
+            <div className="flex flex-col gap-4">
+                <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-bold">かいとうじかん</h3>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setSortType('time')}
+                            className={`px-3 py-1 rounded text-sm ${sortType === 'time'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                        >
+                            じかん順
+                        </button>
+                        <button
+                            onClick={() => setSortType('id')}
+                            className={`px-3 py-1 rounded text-sm ${sortType === 'id'
+                                ? 'bg-blue-500 text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                        >
+                            もんだい順
+                        </button>
+                    </div>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
                     <button
-                        onClick={() => setSortType('time')}
-                        className={`px-3 py-1 rounded text-sm ${sortType === 'time'
-                            ? 'bg-blue-500 text-white'
+                        onClick={() => setSelectedType('all')}
+                        className={`px-3 py-1 rounded text-sm ${selectedType === 'all'
+                            ? 'bg-gray-800 text-white'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                             }`}
                     >
-                        じかん順
+                        すべて
                     </button>
-                    <button
-                        onClick={() => setSortType('id')}
-                        className={`px-3 py-1 rounded text-sm ${sortType === 'id'
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                            }`}
-                    >
-                        もんだい順
-                    </button>
+                    {Object.entries(ProblemTypeLabels).map(([type, label]) => (
+                        <button
+                            key={type}
+                            onClick={() => setSelectedType(type as ProblemType)}
+                            className={`px-3 py-1 rounded text-sm flex items-center gap-2 ${selectedType === type
+                                ? 'text-white'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                }`}
+                            style={{
+                                backgroundColor: selectedType === type
+                                    ? TYPE_COLORS[type as ProblemType]
+                                    : undefined
+                            }}
+                        >
+                            <div
+                                className="w-3 h-3 rounded-sm"
+                                style={{ backgroundColor: TYPE_COLORS[type as ProblemType] }}
+                            />
+                            {label}
+                        </button>
+                    ))}
                 </div>
             </div>
-            <div style={{ height: `${calculateChartHeight()}px` }} className="w-full">
+
+            <div style={{ height: `${calculateChartHeight()}px` }} className="w-full mt-4">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={medianTimes}
@@ -164,3 +206,5 @@ export const ProblemStats = () => {
         </div>
     );
 };
+
+export default ProblemStats;
