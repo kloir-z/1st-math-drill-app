@@ -60,25 +60,6 @@ export const DailyLearningRecord: React.FC = () => {
                     <p>まちがえた もんだいは ありません</p>
                 )}
             </div>
-
-            {/* 時間のかかった問題 */}
-            <div>
-                <h4 className="font-bold mb-2">じかんの かかった もんだい</h4>
-                {dailyRecord.slowProblems.length > 0 ? (
-                    <div className="space-y-2">
-                        {dailyRecord.slowProblems.map((problem, index) => (
-                            <div key={index} className="bg-yellow-50 p-2 rounded">
-                                <div>{formatProblem(problem)}</div>
-                                <div className="text-sm text-gray-600">
-                                    かかったじかん: {formatTime(problem.answeredTime)}
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                ) : (
-                    <p>へいきんより おそい もんだいは ありません</p>
-                )}
-            </div>
         </div>
     );
 };

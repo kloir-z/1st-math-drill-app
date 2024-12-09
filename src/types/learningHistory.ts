@@ -46,7 +46,6 @@ export interface DailyRecord {
     date: string;  // YYYY-MM-DD形式
     problemCounts: Record<ProblemType, number>;
     incorrectProblems: DailyProblemRecord[];
-    slowProblems: DailyProblemRecord[];  // 平均より30%以上時間がかかった問題
 }
 
 export interface LearningHistory {

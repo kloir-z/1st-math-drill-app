@@ -126,7 +126,6 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                     [type]: 0
                 }), {}),
                 incorrectProblems: [],
-                slowProblems: []
             };
 
             const newProblemCounts = {
@@ -161,12 +160,6 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                 newIncorrectProblems.push(problemRecord);
             }
 
-            // 時間のかかった問題の判定（その型の平均時間より30%以上遅い）
-            const newSlowProblems = [...currentDailyRecord.slowProblems];
-            if (cappedAnsweredTime > newTypeStats.averageAnswerTime * 1.3) {
-                newSlowProblems.push(problemRecord);
-            }
-
             return {
                 ...prev,
                 problemHistories: {
@@ -198,7 +191,6 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                         date: today,
                         problemCounts: newProblemCounts,
                         incorrectProblems: newIncorrectProblems,
-                        slowProblems: newSlowProblems
                     }
                 }
             };

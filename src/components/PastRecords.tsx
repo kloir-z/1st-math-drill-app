@@ -98,23 +98,6 @@ export default function PastRecords({ onClose }: { onClose: () => void }) {
                                                 </div>
                                             </div>
                                         )}
-
-                                        {/* 時間のかかった問題 */}
-                                        {record.slowProblems.length > 0 && (
-                                            <div className="mt-4">
-                                                <h4 className="font-bold mb-2">じかんの かかった もんだい</h4>
-                                                <div className="space-y-2">
-                                                    {record.slowProblems.map((problem, index) => (
-                                                        <div key={index} className="bg-yellow-50 p-2 rounded">
-                                                            <div>{formatProblem(problem)}</div>
-                                                            <div className="text-sm text-gray-600">
-                                                                かかったじかん: {formatTime(problem.answeredTime)}
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
                                     </div>
                                 )}
                             </div>
