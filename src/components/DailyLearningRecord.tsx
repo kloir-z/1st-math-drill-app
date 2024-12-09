@@ -2,7 +2,14 @@ import React, { useState } from 'react';
 import { useLearningHistory } from '../hooks/useLearningHistory';
 import { DailyProblemRecord } from '../types/learningHistory';
 import { ProblemType, ProblemTypeLabels } from '../types/mathProblems';
-import { getJSTDateString } from '../utils/dateUtils'; // 追加
+import { getJSTDateString } from '../utils/dateUtils';
+
+const TYPE_COLORS = {
+    [ProblemType.AdditionNoCarry]: '#3b82f6',      // blue
+    [ProblemType.SubtractionNoBorrow]: '#ef4444',   // red
+    [ProblemType.AdditionWithCarry]: '#22c55e',     // green
+    [ProblemType.SubtractionWithBorrow]: '#f59e0b', // amber
+};
 
 export const DailyLearningRecord: React.FC = () => {
     const { history } = useLearningHistory();
@@ -34,12 +41,21 @@ export const DailyLearningRecord: React.FC = () => {
             {/* 問題種類ごとの解答数 */}
             <div className="mb-4">
                 <h4 className="font-bold mb-2">といた もんだいの かず</h4>
-                {Object.entries(dailyRecord.problemCounts).map(([type, count]) => (
-                    <div key={type} className="flex justify-between mb-1">
-                        <span>{ProblemTypeLabels[type as ProblemType]}:</span>
-                        <span>{count}もん</span>
-                    </div>
-                ))}
+                {Object.entries(dailyRecord.problemCounts).map(([type, count]) => {
+                    const problemType = type as ProblemType;
+                    return (
+                        <div key={type} className="flex items-center justify-between mb-1">
+                            <div className="flex items-center gap-2">
+                                <div
+                                    className="w-4 h-4 rounded-sm"
+                                    style={{ backgroundColor: TYPE_COLORS[problemType] }}
+                                />
+                                <span>{ProblemTypeLabels[problemType]}:</span>
+                            </div>
+                            <span>{count}もん</span>
+                        </div>
+                    );
+                })}
             </div>
 
             {/* 間違えた問題 */}
@@ -49,8 +65,14 @@ export const DailyLearningRecord: React.FC = () => {
                     <div className="space-y-2">
                         {dailyRecord.incorrectProblems.map((problem, index) => (
                             <div key={index} className="bg-red-50 p-2 rounded">
-                                <div>{formatProblem(problem)}</div>
-                                <div className="text-sm text-gray-600">
+                                <div className="flex items-center gap-2">
+                                    <div
+                                        className="w-3 h-3 rounded-sm"
+                                        style={{ backgroundColor: TYPE_COLORS[problem.type] }}
+                                    />
+                                    <div>{formatProblem(problem)}</div>
+                                </div>
+                                <div className="text-sm text-gray-600 ml-5">
                                     かかったじかん: {formatTime(problem.answeredTime)}
                                 </div>
                             </div>

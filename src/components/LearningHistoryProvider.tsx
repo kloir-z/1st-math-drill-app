@@ -1,4 +1,3 @@
-// components/LearningHistoryProvider.tsx
 import React, { useEffect, useState } from 'react';
 import {
     LearningHistory,
@@ -15,6 +14,8 @@ import {
 import { MathProblem, ProblemType } from '../types/mathProblems';
 import { LearningHistoryContext } from '../contexts/LearningHistoryContext';
 
+const MAX_HISTORY_PER_PROBLEM = 10;
+
 const createDefaultProblemTypeStats = (): ProblemTypeStats => ({
     totalAttempts: 0,
     correctAttempts: 0,
@@ -23,7 +24,6 @@ const createDefaultProblemTypeStats = (): ProblemTypeStats => ({
 });
 
 const getJapanDate = (): string => {
-    // 日本時間のタイムゾーンオフセットを設定（UTC+9）
     const now = new Date();
     const jpTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
     return jpTime.toISOString().split('T')[0];
@@ -35,7 +35,7 @@ const createDefaultDailyCount = (today: string): DailyCount => ({
 });
 
 const createDefaultLearningHistory = (): LearningHistory => {
-    const today = getJapanDate(); // 修正
+    const today = getJapanDate();
     return {
         problemHistories: {},
         problemTypeStats: {
@@ -62,8 +62,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
         if (stored) {
             try {
                 const parsed = JSON.parse(stored);
-                // 日付が変わっていたら dailyCounts をリセット
-                const today = getJapanDate(); // 修正
+                const today = getJapanDate();
                 if (parsed.dailyCounts[ProblemType.AdditionNoCarry].date !== today) {
                     Object.keys(parsed.dailyCounts).forEach(type => {
                         parsed.dailyCounts[type] = createDefaultDailyCount(today);
@@ -93,7 +92,6 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
         const cappedAnsweredTime = Math.min(answeredTime, MAX_ANSWER_TIME);
 
         setHistory(prev => {
-            // 問題タイプごとのdailyCountを更新
             const prevCount = prev.dailyCounts[problem.type];
             const newDailyCount = prevCount.date === today
                 ? {
@@ -113,12 +111,14 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                 attempts: [],
             };
 
+            const updatedAttempts = [...existingHistory.attempts, newAttempt]
+                .slice(-MAX_HISTORY_PER_PROBLEM);
+
             const existingStats = prev.problemStats[problemId] || {
                 attemptCount: 0,
                 lastAttempted: null
             };
 
-            // 日次記録の更新
             const currentDailyRecord = prev.dailyRecords[today] || {
                 date: today,
                 problemCounts: Object.values(ProblemType).reduce((acc, type) => ({
@@ -154,7 +154,6 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                 lastAttemptDate: timestamp,
             };
 
-            // 不正解の場合、incorrectProblemsに追加
             const newIncorrectProblems = [...currentDailyRecord.incorrectProblems];
             if (!isCorrect) {
                 newIncorrectProblems.push(problemRecord);
@@ -166,7 +165,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                     ...prev.problemHistories,
                     [problemId]: {
                         ...existingHistory,
-                        attempts: [...existingHistory.attempts, newAttempt],
+                        attempts: updatedAttempts,
                     },
                 },
                 problemTypeStats: {
@@ -196,8 +195,6 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
             };
         });
     };
-
-
 
     const getProblemHistory = (problemId: string): ProblemHistory | null => {
         return history.problemHistories[problemId] || null;

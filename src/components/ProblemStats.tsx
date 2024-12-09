@@ -10,30 +10,35 @@ interface ProblemMedianTime {
     medianTime: number;
     attemptCount: number;
     type: ProblemType;
+    displayId: string;
 }
 
 type SortType = 'time' | 'id';
 
 const TYPE_COLORS = {
-    [ProblemType.AdditionNoCarry]: '#3b82f6',      // blue
-    [ProblemType.SubtractionNoBorrow]: '#ef4444',   // red
-    [ProblemType.AdditionWithCarry]: '#22c55e',     // green
-    [ProblemType.SubtractionWithBorrow]: '#f59e0b', // amber
+    [ProblemType.AdditionNoCarry]: '#3b82f6',
+    [ProblemType.SubtractionNoBorrow]: '#ef4444',
+    [ProblemType.AdditionWithCarry]: '#22c55e',
+    [ProblemType.SubtractionWithBorrow]: '#f59e0b',
 };
 
 export const ProblemStats = () => {
     const { history } = useLearningHistory();
     const [sortType, setSortType] = useState<SortType>('time');
 
-    // 各問題の中央値を計算
     const calculateMedianTimes = (): ProblemMedianTime[] => {
         let stats = Object.entries(history.problemHistories)
             .map(([problemId, problemHistory]) => {
                 const times = problemHistory.attempts.map(a => a.answeredTime);
-                const sortedTimes = _.sortBy(times);
-                const medianTime = times.length % 2 === 0
-                    ? (sortedTimes[times.length / 2 - 1] + sortedTimes[times.length / 2]) / 2
-                    : sortedTimes[Math.floor(times.length / 2)];
+                let averageTime;
+                if (times.length === 1) {
+                    averageTime = times[0];
+                } else {
+                    const sortedTimes = _.sortBy(times);
+                    averageTime = times.length % 2 === 0
+                        ? (sortedTimes[times.length / 2 - 1] + sortedTimes[times.length / 2]) / 2
+                        : sortedTimes[Math.floor(times.length / 2)];
+                }
 
                 let type: ProblemType = ProblemType.AdditionNoCarry;
                 for (const [problemType, problems] of Object.entries(allProblems)) {
@@ -45,16 +50,16 @@ export const ProblemStats = () => {
 
                 return {
                     problemId,
-                    medianTime: Math.round(medianTime) / 1000,
+                    displayId: `${problemId} (${times.length})`,
+                    medianTime: Math.round(averageTime) / 1000,
                     attemptCount: times.length,
                     type
                 };
             })
-            .filter(stat => stat.attemptCount >= 2);
+            .filter(stat => stat.attemptCount >= 1);
 
-        // ソート
         if (sortType === 'time') {
-            stats = _.sortBy(stats, 'medianTime');
+            stats = _.orderBy(stats, 'medianTime', 'desc');
         } else {
             stats = _.sortBy(stats, ['type', 'problemId']);
         }
@@ -72,6 +77,19 @@ export const ProblemStats = () => {
             </div>
         );
     }
+
+    const calculateChartHeight = () => {
+        const baseHeight = 40;
+        const minHeight = 256;
+        const calculatedHeight = Math.max(baseHeight * medianTimes.length, minHeight);
+        return calculatedHeight;
+    };
+
+    const longestProblemId = medianTimes.reduce((longest, current) =>
+        current.displayId.length > longest.length ? current.displayId : longest,
+        ''
+    );
+    const leftMargin = Math.max(longestProblemId.length * 8 + 10, 30);
 
     return (
         <div className="bg-white rounded-lg p-4 shadow-md">
@@ -98,12 +116,17 @@ export const ProblemStats = () => {
                     </button>
                 </div>
             </div>
-            <div className="h-64">
+            <div style={{ height: `${calculateChartHeight()}px` }} className="w-full">
                 <ResponsiveContainer width="100%" height="100%">
                     <BarChart
                         data={medianTimes}
                         layout="vertical"
-                        margin={{ top: 5, right: 30, left: 60, bottom: 35 }}
+                        margin={{
+                            top: 5,
+                            right: 30,
+                            left: leftMargin,
+                            bottom: 35
+                        }}
                     >
                         <CartesianGrid strokeDasharray="3 3" />
                         <XAxis
@@ -116,14 +139,14 @@ export const ProblemStats = () => {
                         />
                         <YAxis
                             type="category"
-                            dataKey="problemId"
-                            width={60}
-                            style={{ fontSize: '0.8rem' }}
+                            dataKey="displayId"
+                            width={leftMargin - 10}
+                            tick={{ fontSize: 14 }}
                             interval={0}
                         />
                         <Tooltip
                             formatter={(value: number) => [`${value.toFixed(2)}びょう`, 'かいとうじかん']}
-                            labelFormatter={(label: string) => `もんだい: ${label}`}
+                            labelFormatter={(label: string) => `もんだい: ${label.split(' ')[0]}`}
                             contentStyle={{ fontSize: '0.875rem' }}
                         />
                         <Bar

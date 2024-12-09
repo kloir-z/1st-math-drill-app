@@ -1,4 +1,3 @@
-// components/MathProblem.tsx
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { MathProblem as MathProblemType, ProblemType } from '../types/mathProblems';
 import { allProblems, calculateAnswer } from '../data/mathProblems';
@@ -11,39 +10,103 @@ interface MathProblemProps {
   onBack: () => void;
 }
 
+const RECENT_PROBLEMS_COUNT = 5;
+const DIFFICULT_PROBLEMS_COUNT = 5;
+const DIFFICULT_PROBLEMS_WEIGHT = 0.4;
+
 export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack }) => {
   const [currentProblem, setCurrentProblem] = useState<MathProblemType | null>(null);
   const [userInput, setUserInput] = useState('');
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [recentProblems, setRecentProblems] = useState<string[]>([]);
 
-  const { recordAttempt, getProblemStats, getDailyCount } = useLearningHistory();
+  const { recordAttempt, getProblemHistory, getProblemStats, getDailyCount } = useLearningHistory();
   const problemStartTime = useRef<number>(Date.now());
 
-  // 問題選択のロジック
   const selectNextProblem = useCallback(() => {
+    const getAverageAnswerTime = (problemId: string) => {
+      const history = getProblemHistory(problemId);
+      if (!history || history.attempts.length === 0) return 0;
+
+      const validAttempts = history.attempts
+        .filter(attempt => attempt.isCorrect)
+        .map(attempt => attempt.answeredTime);
+
+      if (validAttempts.length === 0) return 0;
+      return validAttempts.reduce((sum, time) => sum + time, 0) / validAttempts.length;
+    };
+
+    const getDifficultProblems = (problems: MathProblemType[]) => {
+      const problemsWithTimes = problems.map(problem => {
+        const problemId = generateProblemId(problem);
+        return {
+          problem,
+          averageTime: getAverageAnswerTime(problemId)
+        };
+      });
+
+      return problemsWithTimes
+        .filter(p => p.averageTime > 0)
+        .sort((a, b) => b.averageTime - a.averageTime)
+        .slice(0, DIFFICULT_PROBLEMS_COUNT)
+        .map(p => p.problem);
+    };
+
     const problems = allProblems[problemType];
+    const difficultProblems = getDifficultProblems(problems);
 
-    // 各問題の解答回数を取得
-    const problemCounts = problems.map(problem => ({
-      problem,
-      stats: getProblemStats(generateProblemId(problem))
-    }));
+    const shouldSelectDifficult =
+      difficultProblems.length > 0 &&
+      Math.random() < DIFFICULT_PROBLEMS_WEIGHT;
 
-    // 最小の解答回数を見つける
-    const minCount = Math.min(...problemCounts.map(p => p.stats.attemptCount));
+    const problemCounts = problems.map(problem => {
+      const problemId = generateProblemId(problem);
+      return {
+        problem,
+        problemId,
+        stats: getProblemStats(problemId)
+      };
+    });
 
-    // 最小解答回数の問題だけをフィルタリング
-    const candidateProblems = problemCounts.filter(p => p.stats.attemptCount === minCount);
+    let candidateProblems: MathProblemType[] = [];
 
-    // ランダムに1つ選択
-    const selectedProblem = candidateProblems[Math.floor(Math.random() * candidateProblems.length)].problem;
+    if (shouldSelectDifficult) {
+      const nonRecentDifficult = difficultProblems.filter(
+        problem => !recentProblems.includes(generateProblemId(problem))
+      );
+      if (nonRecentDifficult.length > 0) {
+        candidateProblems = nonRecentDifficult;
+      }
+    }
+
+    if (candidateProblems.length === 0) {
+      const minCount = Math.min(...problemCounts.map(p => p.stats.attemptCount));
+      const normalCandidates = problemCounts
+        .filter(p => p.stats.attemptCount === minCount)
+        .map(p => p.problem);
+
+      const nonRecentNormal = normalCandidates.filter(
+        problem => !recentProblems.includes(generateProblemId(problem))
+      );
+
+      candidateProblems = nonRecentNormal.length > 0 ? nonRecentNormal : normalCandidates;
+    }
+
+    const selectedProblem = candidateProblems[
+      Math.floor(Math.random() * candidateProblems.length)
+    ];
+
+    const newProblemId = generateProblemId(selectedProblem);
+    setRecentProblems(prev => {
+      const updated = [newProblemId, ...prev.slice(0, RECENT_PROBLEMS_COUNT - 1)];
+      return updated;
+    });
 
     return selectedProblem;
-  }, [problemType, getProblemStats]);
+  }, [problemType, getProblemHistory, getProblemStats, recentProblems]);
 
-  // 日付をフォーマットする関数
   const formatDate = (date: Date) => {
     const month = date.getMonth() + 1;
     const day = date.getDate();
@@ -101,7 +164,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
 
     setIsAnswerVisible(true);
     const answeredTime = Date.now() - problemStartTime.current;
-    recordAttempt(currentProblem, false, answeredTime);  // 答えを見た場合は不正解として記録
+    recordAttempt(currentProblem, false, answeredTime);
   };
 
   useEffect(() => {
@@ -122,7 +185,6 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
   return (
     <div className="flex items-center justify-center min-h-[80vh]">
       <div className="w-full max-w-md bg-white p-4 rounded-lg shadow-lg">
-        {/* 戻るボタンと問題番号を横並びに */}
         <div className="flex justify-between items-center mb-2">
           <button
             onClick={onBack}

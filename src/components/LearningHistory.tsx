@@ -1,7 +1,6 @@
 // components/LearningHistory.tsx
 import React, { useState } from 'react';
 import { useLearningHistory } from '../hooks/useLearningHistory';
-import { ProblemType, ProblemTypeLabels } from '../types/mathProblems';
 import { ProblemStats } from './ProblemStats';
 import { DailyLearningRecord } from './DailyLearningRecord';
 import PastRecords from './PastRecords';
@@ -28,31 +27,6 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
     if (showPastRecords) {
         return <PastRecords onClose={() => setShowPastRecords(false)} />;
     }
-
-    // 問題種類ごとの統計を表示
-    const renderProblemTypeStats = (type: ProblemType) => {
-        const stats = history.problemTypeStats[type];
-        const correctRate = stats.totalAttempts > 0
-            ? (stats.correctAttempts / stats.totalAttempts * 100).toFixed(1)
-            : '0.0';
-        const averageTime = stats.totalAttempts > 0
-            ? Math.round(stats.averageAnswerTime / 1000)
-            : 0;
-
-        return (
-            <div key={type} className="bg-white rounded-lg p-4 shadow-md">
-                <h3 className="text-lg font-bold mb-2">{ProblemTypeLabels[type]}</h3>
-                <div className="space-y-2 text-sm">
-                    <p>といた もんだい: {stats.totalAttempts}もん</p>
-                    <p>せいかいりつ: {correctRate}%</p>
-                    <p>へいきん かいとうじかん: {averageTime}びょう</p>
-                    {stats.lastAttemptDate && (
-                        <p>さいごに といた ひ: {formatDate(stats.lastAttemptDate)}</p>
-                    )}
-                </div>
-            </div>
-        );
-    };
 
     interface ParsedProblem {
         num1: number;
@@ -148,10 +122,6 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
                 <ProblemStats />
 
                 {renderRecentHistory()}
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Object.values(ProblemType).map(type => renderProblemTypeStats(type))}
-                </div>
 
             </div>
         </div>
