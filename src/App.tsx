@@ -1,6 +1,5 @@
 // App.tsx
 import { useState } from 'react';
-import './App.css';
 import { ProblemTypeSelector } from './components/ProblemTypeSelector';
 import { MathProblem } from './components/MathProblem';
 import { LearningHistory } from './components/LearningHistory';

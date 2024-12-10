@@ -66,4 +66,4 @@ export const generateProblemId = (problem: MathProblem): string => {
 };
 
 // 最大解答時間（ミリ秒）
-export const MAX_ANSWER_TIME = 60000; // 60秒
+export const MAX_ANSWER_TIME = 300000; // 60秒

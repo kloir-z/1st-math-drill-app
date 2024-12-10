@@ -74,28 +74,10 @@ export const ProblemStats = () => {
     };
 
     const medianTimes = calculateMedianTimes();
-
-    if (medianTimes.length === 0) {
-        return (
-            <div className="bg-white rounded-lg p-4 shadow-md">
-                <h3 className="text-lg font-bold mb-2">かいとうじかん</h3>
-                <p className="text-gray-600">まだ データが ありません</p>
-            </div>
-        );
-    }
-
-    const calculateChartHeight = () => {
-        const baseHeight = 40;
-        const minHeight = 256;
-        const calculatedHeight = Math.max(baseHeight * medianTimes.length, minHeight);
-        return calculatedHeight;
-    };
-
-    const longestProblemId = medianTimes.reduce((longest, current) =>
-        current.displayId.length > longest.length ? current.displayId : longest,
-        ''
-    );
-    const leftMargin = Math.max(longestProblemId.length * 8 + 10, 30);
+    const chartHeight = Math.max(40 * Math.max(medianTimes.length, 1), 256);
+    const leftMargin = medianTimes.length > 0
+        ? Math.max(Math.max(...medianTimes.map(m => m.displayId.length)) * 8 + 10, 30)
+        : 50;
 
     return (
         <div className="bg-white rounded-lg p-4 shadow-md">
@@ -158,50 +140,56 @@ export const ProblemStats = () => {
                 </div>
             </div>
 
-            <div style={{ height: `${calculateChartHeight()}px` }} className="w-full mt-4">
-                <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                        data={medianTimes}
-                        layout="vertical"
-                        margin={{
-                            top: 5,
-                            right: 30,
-                            left: leftMargin,
-                            bottom: 35
-                        }}
-                    >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis
-                            type="number"
-                            label={{
-                                value: 'びょう',
-                                position: 'bottom',
-                                offset: 0
+            <div style={{ height: `${chartHeight}px` }} className="w-full mt-4">
+                {medianTimes.length > 0 ? (
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart
+                            data={medianTimes}
+                            layout="vertical"
+                            margin={{
+                                top: 5,
+                                right: 30,
+                                left: leftMargin,
+                                bottom: 35
                             }}
-                        />
-                        <YAxis
-                            type="category"
-                            dataKey="displayId"
-                            width={leftMargin - 10}
-                            tick={{ fontSize: 14 }}
-                            interval={0}
-                        />
-                        <Tooltip
-                            formatter={(value: number) => [`${value.toFixed(2)}びょう`, 'かいとうじかん']}
-                            labelFormatter={(label: string) => `もんだい: ${label.split(' ')[0]}`}
-                            contentStyle={{ fontSize: '0.875rem' }}
-                        />
-                        <Bar
-                            dataKey="medianTime"
-                            name="medianTime"
-                            barSize={20}
                         >
-                            {medianTimes.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={TYPE_COLORS[entry.type]} />
-                            ))}
-                        </Bar>
-                    </BarChart>
-                </ResponsiveContainer>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis
+                                type="number"
+                                label={{
+                                    value: 'びょう',
+                                    position: 'bottom',
+                                    offset: 0
+                                }}
+                            />
+                            <YAxis
+                                type="category"
+                                dataKey="displayId"
+                                width={leftMargin - 10}
+                                tick={{ fontSize: 14 }}
+                                interval={0}
+                            />
+                            <Tooltip
+                                formatter={(value: number) => [`${value.toFixed(2)}びょう`, 'かいとうじかん']}
+                                labelFormatter={(label: string) => `もんだい: ${label.split(' ')[0]}`}
+                                contentStyle={{ fontSize: '0.875rem' }}
+                            />
+                            <Bar
+                                dataKey="medianTime"
+                                name="medianTime"
+                                barSize={20}
+                            >
+                                {medianTimes.map((entry, index) => (
+                                    <Cell key={`cell-${index}`} fill={TYPE_COLORS[entry.type]} />
+                                ))}
+                            </Bar>
+                        </BarChart>
+                    </ResponsiveContainer>
+                ) : (
+                    <div className="h-full flex items-center justify-center text-gray-500">
+                        まだ データが ありません
+                    </div>
+                )}
             </div>
         </div>
     );

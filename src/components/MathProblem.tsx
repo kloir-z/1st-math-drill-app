@@ -159,14 +159,6 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
     }
   };
 
-  const handleShowAnswer = () => {
-    if (!currentProblem || isTransitioning) return;
-
-    setIsAnswerVisible(true);
-    const answeredTime = Date.now() - problemStartTime.current;
-    recordAttempt(currentProblem, false, answeredTime);
-  };
-
   useEffect(() => {
     if (!currentProblem) {
       getNextProblem();
@@ -221,17 +213,6 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
           currentInput={userInput}
         />
 
-        {/* 答えを見るボタン */}
-        <div className="mt-4">
-          <button
-            onClick={handleShowAnswer}
-            className="w-full p-4 bg-blue-500 text-white rounded-lg font-bold hover:bg-blue-600 
-              transition-colors disabled:bg-gray-300 select-none"
-            disabled={isAnswerVisible || isCorrect === true}
-          >
-            こたえを みる
-          </button>
-        </div>
       </div>
     </div>
   );
