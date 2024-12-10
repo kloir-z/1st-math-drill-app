@@ -59,7 +59,6 @@ export const ProblemStats = () => {
             })
             .filter(stat => stat.attemptCount >= 1);
 
-        // Filter by selected type
         if (selectedType !== 'all') {
             stats = stats.filter(stat => stat.type === selectedType);
         }
@@ -75,9 +74,6 @@ export const ProblemStats = () => {
 
     const medianTimes = calculateMedianTimes();
     const chartHeight = Math.max(40 * Math.max(medianTimes.length, 1), 256);
-    const leftMargin = medianTimes.length > 0
-        ? Math.max(Math.max(...medianTimes.map(m => m.displayId.length)) * 8 + 10, 30)
-        : 50;
 
     return (
         <div className="bg-white rounded-lg p-4 shadow-md">
@@ -146,12 +142,7 @@ export const ProblemStats = () => {
                         <BarChart
                             data={medianTimes}
                             layout="vertical"
-                            margin={{
-                                top: 5,
-                                right: 30,
-                                left: leftMargin,
-                                bottom: 35
-                            }}
+                            margin={{ top: 5, right: 30, left: 0, bottom: 35 }}
                         >
                             <CartesianGrid strokeDasharray="3 3" />
                             <XAxis
@@ -165,20 +156,16 @@ export const ProblemStats = () => {
                             <YAxis
                                 type="category"
                                 dataKey="displayId"
-                                width={leftMargin - 10}
                                 tick={{ fontSize: 14 }}
                                 interval={0}
+                                width={80}
                             />
                             <Tooltip
                                 formatter={(value: number) => [`${value.toFixed(2)}びょう`, 'かいとうじかん']}
                                 labelFormatter={(label: string) => `もんだい: ${label.split(' ')[0]}`}
                                 contentStyle={{ fontSize: '0.875rem' }}
                             />
-                            <Bar
-                                dataKey="medianTime"
-                                name="medianTime"
-                                barSize={20}
-                            >
+                            <Bar dataKey="medianTime" name="medianTime" barSize={20}>
                                 {medianTimes.map((entry, index) => (
                                     <Cell key={`cell-${index}`} fill={TYPE_COLORS[entry.type]} />
                                 ))}
