@@ -1,14 +1,5 @@
 import { MathProblem } from '../types/mathProblems';
 import { ProblemHistory, generateProblemId } from '../types/learningHistory';
-import { ProblemScore } from '../types/problemSelections';
-
-const RECENT_ATTEMPTS_COUNT = 5;
-const TIME_WEIGHT = 0.3;
-const ACCURACY_WEIGHT = 0.4;
-const LAST_INCORRECT_WEIGHT = 0.3;
-const DECAY_FACTOR = 0.1; // 時間経過による減衰係数
-const DEFAULT_ACCURACY = 0.5;
-const RANDOM_FACTOR_RANGE = 0.4; // ±20%のランダム性
 
 export class ProblemSelector {
     private recentProblems: string[] = [];
@@ -20,138 +11,124 @@ export class ProblemSelector {
         this.problemHistories = problemHistories;
     }
 
-    // 回答時間のスコアを計算
-    private calculateTimeScore(problemId: string): number {
+    // 問題の実施回数を取得
+    private getAttemptCount(problemId: string): number {
+        return this.problemHistories[problemId]?.attempts.length || 0;
+    }
+
+    // 過去N回の試行を取得
+    private getRecentAttempts(problemId: string, count: number) {
         const history = this.problemHistories[problemId];
-        if (!history || history.attempts.length === 0) return 0.5;
-
-        const recentAttempts = history.attempts
-            .slice(-RECENT_ATTEMPTS_COUNT)
-            .filter(attempt => attempt.isCorrect);
-
-        if (recentAttempts.length === 0) return 0.5;
-
-        const avgTime = recentAttempts.reduce((sum, att) => sum + att.answeredTime, 0) / recentAttempts.length;
-        // 20秒を基準として正規化（20秒で0.5のスコア）
-        return Math.min(avgTime / 20000, 1);
+        if (!history) return [];
+        return history.attempts.slice(-count);
     }
 
-    // 正答率のスコアを計算
-    private calculateAccuracyScore(problemId: string): number {
-        const history = this.problemHistories[problemId];
-        if (!history || history.attempts.length === 0) return DEFAULT_ACCURACY;
+    // 過去15回以内で間違えた問題かつ、その後正解していない問題かを判定
+    private isRecentlyFailedProblem(problemId: string): boolean {
+        const recentAttempts = this.getRecentAttempts(problemId, 15);
+        if (recentAttempts.length === 0) return false;
 
-        const recentAttempts = history.attempts.slice(-RECENT_ATTEMPTS_COUNT);
-        const correctCount = recentAttempts.filter(att => att.isCorrect).length;
-        return 1 - (correctCount / recentAttempts.length);
+        // 最後の不正解のインデックスを見つける
+        const lastFailureIndex = recentAttempts
+            .map(a => a.isCorrect)
+            .lastIndexOf(false);
+
+        // 不正解がない、または最後の試行が不正解の場合
+        if (lastFailureIndex === -1) return false;
+
+        // 不正解の後に正解があるかチェック
+        return !recentAttempts.slice(lastFailureIndex + 1).some(a => a.isCorrect);
     }
 
-    // 最後の不正解からの経過時間スコアを計算
-    private calculateLastIncorrectScore(problemId: string): number {
-        const history = this.problemHistories[problemId];
-        if (!history || history.attempts.length === 0) return 0.5;
+    // 過去30回の中で時間を要したトップ3の問題かつ、改善していない問題かを判定
+    private isSlowProblem(problemId: string): boolean {
+        const recentAttempts = this.getRecentAttempts(problemId, 30);
+        if (recentAttempts.length < 3) return false;
 
-        const lastIncorrect = [...history.attempts]
-            .reverse()
-            .find(att => !att.isCorrect);
+        // 過去30回の平均時間を計算
+        const avgTime = recentAttempts.reduce((sum, a) => sum + a.answeredTime, 0) / recentAttempts.length;
 
-        if (!lastIncorrect) return 0;
+        // 最新の解答時間
+        const latestTime = recentAttempts[recentAttempts.length - 1].answeredTime;
 
-        const hoursSinceLastIncorrect =
-            (Date.now() - new Date(lastIncorrect.timestamp).getTime()) / (1000 * 60 * 60);
+        // 改善していれば除外
+        if (latestTime <= avgTime) return false;
 
-        return Math.exp(-DECAY_FACTOR * hoursSinceLastIncorrect);
-    }
-
-    // セッションの正答率に基づいて重みを調整
-    private getAdjustedWeights(): { timeWeight: number; accuracyWeight: number; lastIncorrectWeight: number } {
-        if (this.currentSessionTotalCount < 5) {
+        // 全問題の平均解答時間でソートしたときのこの問題の位置を確認
+        const allProblemAvgTimes = Object.keys(this.problemHistories).map(id => {
+            const attempts = this.getRecentAttempts(id, 30);
+            if (attempts.length === 0) return { id, avgTime: 0 };
             return {
-                timeWeight: TIME_WEIGHT,
-                accuracyWeight: ACCURACY_WEIGHT,
-                lastIncorrectWeight: LAST_INCORRECT_WEIGHT
-            };
-        }
-
-        const sessionAccuracy = this.currentSessionCorrectCount / this.currentSessionTotalCount;
-        if (sessionAccuracy > 0.8) {
-            // 正答率が高い場合は時間の重みを増やす
-            return {
-                timeWeight: TIME_WEIGHT * 1.5,
-                accuracyWeight: ACCURACY_WEIGHT * 0.7,
-                lastIncorrectWeight: LAST_INCORRECT_WEIGHT * 0.8
-            };
-        } else if (sessionAccuracy < 0.6) {
-            // 正答率が低い場合は正答率の重みを増やす
-            return {
-                timeWeight: TIME_WEIGHT * 0.7,
-                accuracyWeight: ACCURACY_WEIGHT * 1.5,
-                lastIncorrectWeight: LAST_INCORRECT_WEIGHT * 0.8
-            };
-        }
-
-        return {
-            timeWeight: TIME_WEIGHT,
-            accuracyWeight: ACCURACY_WEIGHT,
-            lastIncorrectWeight: LAST_INCORRECT_WEIGHT
-        };
-    }
-
-    // 問題の総合スコアを計算
-    private calculateProblemScore(problemId: string): ProblemScore {
-        const timeScore = this.calculateTimeScore(problemId);
-        const accuracyScore = this.calculateAccuracyScore(problemId);
-        const lastIncorrectScore = this.calculateLastIncorrectScore(problemId);
-
-        const weights = this.getAdjustedWeights();
-        const baseScore =
-            timeScore * weights.timeWeight +
-            accuracyScore * weights.accuracyWeight +
-            lastIncorrectScore * weights.lastIncorrectWeight;
-
-        // ランダム係数を適用
-        const randomFactor = 1 + (Math.random() * RANDOM_FACTOR_RANGE - RANDOM_FACTOR_RANGE / 2);
-        const totalScore = baseScore * randomFactor;
-
-        return {
-            timeScore,
-            accuracyScore,
-            lastIncorrectScore,
-            totalScore
-        };
-    }
-
-    // 次の問題を選択
-    selectNextProblem(problems: MathProblem[]): MathProblem {
-        const availableProblems = problems.filter(problem =>
-            !this.recentProblems.includes(generateProblemId(problem))
-        );
-
-        // スコア付けとソート
-        const scoredProblems = availableProblems.map(problem => {
-            const problemId = generateProblemId(problem);
-            return {
-                problem,
-                score: this.calculateProblemScore(problemId)
+                id,
+                avgTime: attempts.reduce((sum, a) => sum + a.answeredTime, 0) / attempts.length
             };
         });
 
-        // スコアで降順ソート
-        scoredProblems.sort((a, b) => b.score.totalScore - a.score.totalScore);
+        allProblemAvgTimes.sort((a, b) => b.avgTime - a.avgTime);
+        const rank = allProblemAvgTimes.findIndex(p => p.id === problemId);
 
-        // 上位3問からランダムに1問選択
-        const topProblems = scoredProblems.slice(0, 3);
-        const selectedProblem =
-            topProblems[Math.floor(Math.random() * topProblems.length)].problem;
+        return rank < 3; // トップ3に入っているか
+    }
 
-        // 履歴を更新
-        const selectedProblemId = generateProblemId(selectedProblem);
-        this.recentProblems = [selectedProblemId, ...this.recentProblems].slice(0, 5);
+    selectNextProblem(problems: MathProblem[]): MathProblem {
+        // 直近5問を除外
+        const availableProblems = problems.filter(p =>
+            !this.recentProblems.includes(generateProblemId(p))
+        );
 
+        if (availableProblems.length === 0) {
+            // 全ての問題が直近5問に含まれている場合は、全問題から選択
+            const randomIndex = Math.floor(Math.random() * problems.length);
+            return problems[randomIndex];
+        }
+
+        // 問題を3つのグループに分類
+        const priorityProblems: MathProblem[] = [];
+        const normalProblems: MathProblem[] = [];
+
+        for (const problem of availableProblems) {
+            const problemId = generateProblemId(problem);
+            if (this.isRecentlyFailedProblem(problemId) || this.isSlowProblem(problemId)) {
+                priorityProblems.push(problem);
+            } else {
+                normalProblems.push(problem);
+            }
+        }
+
+        // 優先問題から30%の確率で出題
+        if (priorityProblems.length > 0 && Math.random() < 0.3) {
+            const index = Math.floor(Math.random() * priorityProblems.length);
+            const selectedProblem = priorityProblems[index];
+            this.updateRecentProblems(selectedProblem);
+            return selectedProblem;
+        }
+
+        // 通常問題を実施回数でソート
+        normalProblems.sort((a, b) =>
+            this.getAttemptCount(generateProblemId(a)) -
+            this.getAttemptCount(generateProblemId(b))
+        );
+
+        // 最も実施回数の少ない問題グループから選択
+        const minAttempts = this.getAttemptCount(generateProblemId(normalProblems[0]));
+        const leastAttemptedProblems = normalProblems.filter(p =>
+            this.getAttemptCount(generateProblemId(p)) === minAttempts
+        );
+
+        const selectedProblem = leastAttemptedProblems[
+            Math.floor(Math.random() * leastAttemptedProblems.length)
+        ];
+
+        this.updateRecentProblems(selectedProblem);
         return selectedProblem;
     }
 
-    // 解答結果を記録
+    private updateRecentProblems(problem: MathProblem): void {
+        const problemId = generateProblemId(problem);
+        this.recentProblems = [problemId, ...this.recentProblems].slice(0, 5);
+    }
+
+    // 解答結果を記録するメソッド（既存コードとの互換性のために追加）
     recordAttempt(isCorrect: boolean): void {
         this.currentSessionTotalCount++;
         if (isCorrect) {
@@ -161,6 +138,7 @@ export class ProblemSelector {
 
     // セッション情報をリセット
     resetSession(): void {
+        this.recentProblems = [];
         this.currentSessionCorrectCount = 0;
         this.currentSessionTotalCount = 0;
     }

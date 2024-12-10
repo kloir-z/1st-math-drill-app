@@ -55,7 +55,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
     setIsTransitioning(false);
   }, [problemType, isTransitioning]);
 
-  const handleSubmit = () => {
+  const handleSubmit = useCallback(() => {
     if (!currentProblem || !userInput || isTransitioning) return;
 
     const correctAnswer = calculateAnswer(currentProblem);
@@ -73,21 +73,37 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
       setIsAnswerVisible(true);
       setTimeout(() => {
         getNextProblem();
-      }, 1500);
+      }, 500);
     } else {
       setUserInput('');
     }
-  };
+  }, [currentProblem, userInput, isTransitioning, recordAttempt, getNextProblem]);
 
-  const handleNumberClick = (num: number) => {
+  const handleNumberClick = useCallback((num: number) => {
     if (userInput.length < 2) {
       setUserInput(prev => prev + num.toString());
     }
-  };
+  }, [userInput]);
 
-  const handleDelete = () => {
+  const handleDelete = useCallback(() => {
     setUserInput('');
-  };
+  }, []);
+
+  // キーボードイベントのハンドラを追加
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key >= '0' && e.key <= '9') {
+        handleNumberClick(parseInt(e.key));
+      } else if (e.key === 'Enter') {
+        handleSubmit();
+      } else if (e.key === 'Backspace' || e.key === 'Delete') {
+        handleDelete();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleNumberClick, handleSubmit, handleDelete]);
 
   useEffect(() => {
     if (!currentProblem) {
@@ -105,7 +121,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
   const problemNumber = dailyCount.count + 1;
 
   return (
-    <div className="flex items-center justify-center min-h-[80vh]">
+    <div className="flex items-center justify-center min-h-[80vh] overflow-hidden">
       <div className="w-full max-w-md bg-white p-4 rounded-lg shadow-lg">
         <div className="flex justify-between items-center mb-4">
           <button
@@ -119,13 +135,11 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
           </div>
         </div>
 
-        {/* 問題表示 */}
         <div className="text-5xl text-center font-bold mb-8 text-gray-800 select-none leading-relaxed">
           {currentProblem.num1} {currentProblem.operator} {currentProblem.num2} = {' '}
           {isAnswerVisible || (isCorrect === true) ? calculateAnswer(currentProblem) : '?'}
         </div>
 
-        {/* メッセージエリア */}
         <div className="h-12 flex items-center justify-center mb-6">
           {isCorrect !== null && (
             <div className={`text-2xl font-bold ${isCorrect ? 'text-green-500' : 'text-red-500'} 
@@ -135,7 +149,6 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
           )}
         </div>
 
-        {/* 数字キーパッド */}
         <div className="mt-2">
           <NumberPad
             onNumberClick={handleNumberClick}

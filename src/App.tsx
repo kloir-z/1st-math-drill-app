@@ -1,4 +1,3 @@
-// App.tsx
 import { useState } from 'react';
 import { ProblemTypeSelector } from './components/ProblemTypeSelector';
 import { MathProblem } from './components/MathProblem';
@@ -22,7 +21,7 @@ function App() {
   }
 
   return (
-    <div className="min-h-screen min-w-screen bg-gray-50 select-none">
+    <div className="min-h-screen bg-gray-50 select-none overflow-hidden">
       <div className="container mx-auto px-4 py-4 md:px-0 md:py-8 max-w-2xl">
         {!selectedProblemType ? (
           <ProblemTypeSelector
