@@ -15,10 +15,6 @@ export const DailyLearningRecord: React.FC = () => {
     const { history } = useLearningHistory();
     const [selectedDate,] = useState<string>(getJSTDateString());
 
-    const formatTime = (ms: number) => {
-        return `${(ms / 1000).toFixed(1)}びょう`;
-    };
-
     const formatProblem = (record: DailyProblemRecord) => {
         return `${record.num1} ${record.operator} ${record.num2}`;
     };
@@ -33,6 +29,22 @@ export const DailyLearningRecord: React.FC = () => {
             </div>
         );
     }
+
+    // 間違えた問題を集計
+    const incorrectProblemCounts = dailyRecord.incorrectProblems.reduce((acc, problem) => {
+        const key = `${problem.num1}${problem.operator}${problem.num2}`;
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
+    }, {} as Record<string, number>);
+
+    // ユニークな間違えた問題を取得
+    const uniqueIncorrectProblems = Array.from(
+        new Map(
+            dailyRecord.incorrectProblems.map(problem =>
+                [`${problem.num1}${problem.operator}${problem.num2}`, problem]
+            )
+        ).values()
+    );
 
     return (
         <div className="bg-white rounded-lg p-4 shadow-md">
@@ -61,22 +73,28 @@ export const DailyLearningRecord: React.FC = () => {
             {/* 間違えた問題 */}
             <div className="mb-4">
                 <h4 className="font-bold mb-2">まちがえた もんだい</h4>
-                {dailyRecord.incorrectProblems.length > 0 ? (
+                {uniqueIncorrectProblems.length > 0 ? (
                     <div className="space-y-2">
-                        {dailyRecord.incorrectProblems.map((problem, index) => (
-                            <div key={index} className="bg-red-50 p-2 rounded">
-                                <div className="flex items-center gap-2">
-                                    <div
-                                        className="w-3 h-3 rounded-sm"
-                                        style={{ backgroundColor: TYPE_COLORS[problem.type] }}
-                                    />
-                                    <div>{formatProblem(problem)}</div>
+                        {uniqueIncorrectProblems.map((problem, index) => {
+                            const problemKey = `${problem.num1}${problem.operator}${problem.num2}`;
+                            const incorrectCount = incorrectProblemCounts[problemKey];
+                            return (
+                                <div key={index} className="bg-red-50 p-2 rounded">
+                                    <div className="flex items-center gap-2">
+                                        <div
+                                            className="w-3 h-3 rounded-sm"
+                                            style={{ backgroundColor: TYPE_COLORS[problem.type] }}
+                                        />
+                                        <div className="flex items-center justify-between w-full">
+                                            <div>{formatProblem(problem)}</div>
+                                            <div className="text-gray-600">
+                                                {incorrectCount}かい
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="text-sm text-gray-600 ml-5">
-                                    かかったじかん: {formatTime(problem.answeredTime)}
-                                </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 ) : (
                     <p>まちがえた もんだいは ありません</p>

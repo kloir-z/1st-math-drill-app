@@ -69,26 +69,26 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
                             key={index}
                             className={`p-2 rounded ${record.isCorrect ? 'bg-green-100' : 'bg-red-100'}`}
                         >
-                            <p className="text-sm">
-                                {record.num1} {record.operator} {record.num2} = {
-                                    record.operator === '+'
-                                        ? record.num1 + record.num2
-                                        : record.num1 - record.num2
-                                }
-                                {record.isCorrect ? ' ○' : ' ×'}
-                                <span className="ml-2 text-gray-600">
-                                    ({Math.round(record.answeredTime / 1000)}びょう)
+                            <div className="flex justify-between items-center">
+                                <span className="text-sm">
+                                    {record.num1} {record.operator} {record.num2} = {
+                                        record.operator === '+'
+                                            ? record.num1 + record.num2
+                                            : record.num1 - record.num2
+                                    }
+                                    {record.isCorrect ? ' ○' : ' ×'}
                                 </span>
-                            </p>
-                            <p className="text-xs text-gray-600">
-                                {formatDate(record.timestamp)}
-                            </p>
+                                <span className="text-xs text-gray-600">
+                                    {formatDate(record.timestamp)}
+                                </span>
+                            </div>
                         </div>
                     ))}
                 </div>
             </div>
         );
     };
+
 
     return (
         <div className="min-h-screen bg-gray-50 px-2 py-4 md:p-4">
