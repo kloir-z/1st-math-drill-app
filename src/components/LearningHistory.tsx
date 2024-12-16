@@ -75,7 +75,7 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
         const formatTimeDiff = (diff: number | null) => {
             if (diff === null) return '';
             if (diff === 0) return '[ベスト!]';
-            return `[+${(diff / 1000).toFixed(2)}びょう]`;
+            return `[+${(diff / 1000).toFixed(2)}s]`;
         };
 
         return (
@@ -95,7 +95,7 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
                                             : record.num1 - record.num2
                                     }
                                     {record.isCorrect ? '  ○ ' : ' × '}
-                                    ({(record.answeredTime / 1000).toFixed(2)}びょう)
+                                    ({(record.answeredTime / 1000).toFixed(2)}s)
                                     {record.isCorrect &&
                                         <span className={record.timeDiff === 0 ? 'text-red-500 font-bold' : ''}>
                                             {' '}{formatTimeDiff(record.timeDiff)}
