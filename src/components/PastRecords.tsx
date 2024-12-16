@@ -32,6 +32,36 @@ export default function PastRecords({ onClose }: { onClose: () => void }) {
         setExpandedDate(expandedDate === date ? null : date);
     };
 
+    // 正解した問題数を計算する関数
+    const calculateCorrectCounts = (record: DailyRecord) => {
+        const correctCounts = Object.fromEntries(
+            Object.keys(record.problemCounts).map(type => [type, 0])
+        );
+
+        // 不正解の問題をカウント
+        const incorrectProblems = new Set(
+            record.incorrectProblems.map(problem =>
+                `${problem.type}:${problem.num1}${problem.operator}${problem.num2}`
+            )
+        );
+
+        // 正解数を計算（総数から不正解を引く）
+        Object.entries(record.problemCounts).forEach(([type, totalCount]) => {
+            const incorrectCount = Array.from(incorrectProblems).filter(id =>
+                id.startsWith(`${type}:`)
+            ).length;
+            correctCounts[type] = totalCount - incorrectCount;
+        });
+
+        return correctCounts;
+    };
+
+    // 総正解数を計算する関数
+    const calculateTotalCorrect = (record: DailyRecord) => {
+        const correctCounts = calculateCorrectCounts(record);
+        return Object.values(correctCounts).reduce((a, b) => a + b, 0);
+    };
+
     return (
         <div className="min-h-screen bg-gray-50 p-4">
             <div className="max-w-2xl mx-auto">
@@ -49,6 +79,7 @@ export default function PastRecords({ onClose }: { onClose: () => void }) {
                     {sortedDates.map((date) => {
                         const record: DailyRecord = history.dailyRecords[date];
                         const isExpanded = expandedDate === date;
+                        const correctCounts = calculateCorrectCounts(record);
 
                         return (
                             <div
@@ -62,17 +93,17 @@ export default function PastRecords({ onClose }: { onClose: () => void }) {
                                     <div className="flex justify-between items-center">
                                         <h3 className="text-lg font-bold">{formatDate(date)}</h3>
                                         <span className="text-gray-600">
-                                            {Object.values(record.problemCounts).reduce((a, b) => a + b, 0)}もん
+                                            {calculateTotalCorrect(record)}もん
                                         </span>
                                     </div>
                                 </button>
 
                                 {isExpanded && (
                                     <div className="px-4 pb-4 border-t">
-                                        {/* 問題種類ごとの解答数 */}
+                                        {/* 問題種類ごとの正解数 */}
                                         <div className="mt-4">
-                                            <h4 className="font-bold mb-2">といた もんだいの かず</h4>
-                                            {Object.entries(record.problemCounts)
+                                            <h4 className="font-bold mb-2">せいかいした もんだいの かず</h4>
+                                            {Object.entries(correctCounts)
                                                 .filter(([, count]) => count > 0)
                                                 .map(([type, count]) => (
                                                     <div key={type} className="flex justify-between mb-1">

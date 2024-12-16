@@ -30,6 +30,26 @@ export const DailyLearningRecord: React.FC = () => {
         );
     }
 
+    // 問題種類ごとの正解数を集計
+    const correctProblemCounts = Object.fromEntries(
+        Object.keys(dailyRecord.problemCounts).map(type => [type, 0])
+    );
+
+    // 不正解の問題をカウント
+    const incorrectProblems = new Set(
+        dailyRecord.incorrectProblems.map(problem =>
+            `${problem.type}:${problem.num1}${problem.operator}${problem.num2}`
+        )
+    );
+
+    // 正解数を計算（総数から不正解を引く）
+    Object.entries(dailyRecord.problemCounts).forEach(([type, totalCount]) => {
+        const incorrectCount = Array.from(incorrectProblems).filter(id =>
+            id.startsWith(`${type}:`)
+        ).length;
+        correctProblemCounts[type] = totalCount - incorrectCount;
+    });
+
     // 間違えた問題を集計
     const incorrectProblemCounts = dailyRecord.incorrectProblems.reduce((acc, problem) => {
         const key = `${problem.num1}${problem.operator}${problem.num2}`;
@@ -50,10 +70,10 @@ export const DailyLearningRecord: React.FC = () => {
         <div className="bg-white rounded-lg p-4 shadow-md">
             <h3 className="text-lg font-bold mb-4">きょうの きろく</h3>
 
-            {/* 問題種類ごとの解答数 */}
+            {/* 問題種類ごとの正解数 */}
             <div className="mb-4">
-                <h4 className="font-bold mb-2">といた もんだいの かず</h4>
-                {Object.entries(dailyRecord.problemCounts).map(([type, count]) => {
+                <h4 className="font-bold mb-2">せいかいした もんだいの かず</h4>
+                {Object.entries(correctProblemCounts).map(([type, count]) => {
                     const problemType = type as ProblemType;
                     return (
                         <div key={type} className="flex items-center justify-between mb-1">

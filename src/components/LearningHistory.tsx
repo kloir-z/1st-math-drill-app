@@ -47,6 +47,14 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
 
     // 最近解いた問題の履歴を表示
     const renderRecentHistory = () => {
+        const bestTimes: Record<string, number> = {};
+        Object.entries(history.problemHistories).forEach(([problemId, history]) => {
+            const attempts = history.attempts.filter(a => a.isCorrect);
+            if (attempts.length > 0) {
+                bestTimes[problemId] = Math.min(...attempts.map(a => a.answeredTime));
+            }
+        });
+
         const recentProblems = Object.entries(history.problemHistories)
             .flatMap(([problemId, history]) => {
                 const parsed = parseProblemId(problemId);
@@ -54,11 +62,21 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
                 return history.attempts.map(attempt => ({
                     problemId,
                     ...parsed,
-                    ...attempt
+                    ...attempt,
+                    bestTime: bestTimes[problemId] || attempt.answeredTime,
+                    timeDiff: attempt.isCorrect ?
+                        attempt.answeredTime - (bestTimes[problemId] || attempt.answeredTime) :
+                        null
                 }));
             })
             .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
             .slice(0, 100);
+
+        const formatTimeDiff = (diff: number | null) => {
+            if (diff === null) return '';
+            if (diff === 0) return '[ベスト!]';
+            return `[+${(diff / 1000).toFixed(2)}びょう]`;
+        };
 
         return (
             <div className="bg-white rounded-lg p-4 shadow-md">
@@ -76,10 +94,16 @@ export const LearningHistory: React.FC<LearningHistoryProps> = ({ onClose }) => 
                                             ? record.num1 + record.num2
                                             : record.num1 - record.num2
                                     }
-                                    {record.isCorrect ? ' ○' : ' ×'}
+                                    {record.isCorrect ? '  ○ ' : ' × '}
+                                    ({(record.answeredTime / 1000).toFixed(2)}びょう)
+                                    {record.isCorrect &&
+                                        <span className={record.timeDiff === 0 ? 'text-red-500 font-bold' : ''}>
+                                            {' '}{formatTimeDiff(record.timeDiff)}
+                                        </span>
+                                    }
                                 </span>
-                                <span className="text-xs text-gray-600">
-                                    {formatDate(record.timestamp)}
+                                <span className="text-sm text-gray-600">
+                                    {formatDate(record.timestamp)}{' '}
                                 </span>
                             </div>
                         </div>
