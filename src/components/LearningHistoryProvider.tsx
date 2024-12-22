@@ -14,7 +14,7 @@ import {
 import { MathProblem, ProblemType } from '../types/mathProblems';
 import { LearningHistoryContext } from '../contexts/LearningHistoryContext';
 
-const MAX_HISTORY_PER_PROBLEM = 10;
+const MAX_HISTORY_PER_PROBLEM = 30;
 
 const createDefaultProblemTypeStats = (): ProblemTypeStats => ({
     totalAttempts: 0,
@@ -52,7 +52,8 @@ const createDefaultLearningHistory = (): LearningHistory => {
             [ProblemType.AdditionWithCarry]: createDefaultDailyCount(today),
             [ProblemType.SubtractionWithBorrow]: createDefaultDailyCount(today),
         },
-        dailyRecords: {}
+        dailyRecords: {},
+        totalAttempts: {} 
     };
 };
 
@@ -61,16 +62,23 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
         const stored = localStorage.getItem(LEARNING_HISTORY_STORAGE_KEY);
         if (stored) {
             try {
-                const parsed = JSON.parse(stored);
+                const parsed: LearningHistory = JSON.parse(stored);
                 const today = getJapanDate();
                 if (parsed.dailyCounts[ProblemType.AdditionNoCarry].date !== today) {
-                    Object.keys(parsed.dailyCounts).forEach(type => {
+                    Object.values(ProblemType).forEach((type: ProblemType) => {
                         parsed.dailyCounts[type] = createDefaultDailyCount(today);
+                    });
+                }
+                if (!parsed.totalAttempts) {
+                    parsed.totalAttempts = {};
+                    Object.entries(parsed.problemHistories).forEach(([problemId, history]) => {
+                        parsed.totalAttempts[problemId] = history.attempts.length;
                     });
                 }
                 return parsed;
             } catch (e) {
                 console.error('Failed to parse learning history:', e);
+                return createDefaultLearningHistory();
             }
         }
         return createDefaultLearningHistory();
@@ -113,6 +121,8 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
 
             const updatedAttempts = [...existingHistory.attempts, newAttempt]
                 .slice(-MAX_HISTORY_PER_PROBLEM);
+
+            const currentTotalAttempts = (prev.totalAttempts[problemId] || 0) + 1;
 
             const existingStats = prev.problemStats[problemId] || {
                 attemptCount: 0,
@@ -191,6 +201,10 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                         problemCounts: newProblemCounts,
                         incorrectProblems: newIncorrectProblems,
                     }
+                },
+                totalAttempts: {
+                    ...prev.totalAttempts,
+                    [problemId]: currentTotalAttempts
                 }
             };
         });
@@ -208,6 +222,10 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
         return history.problemStats[problemId] || { attemptCount: 0, lastAttempted: null };
     };
 
+    const getTotalAttempts = (problemId: string): number => {
+        return history.totalAttempts[problemId] || 0;
+    };
+
     const getDailyCount = (type: ProblemType): DailyCount => {
         return history.dailyCounts[type];
     };
@@ -222,6 +240,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
         getProblemHistory,
         getProblemTypeStats,
         getProblemStats,
+        getTotalAttempts,
         getDailyCount,
         clearHistory,
     };

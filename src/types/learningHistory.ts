@@ -55,6 +55,7 @@ export interface LearningHistory {
     lastUpdated: string;
     dailyCounts: Record<ProblemType, DailyCount>;
     dailyRecords: Record<string, DailyRecord>;
+    totalAttempts: Record<string, number>; // 問題ごとの総試行回数を記録
 }
 
 // LocalStorage用のキー
@@ -66,4 +67,4 @@ export const generateProblemId = (problem: MathProblem): string => {
 };
 
 // 最大解答時間（ミリ秒）
-export const MAX_ANSWER_TIME = 300000; // 60秒
+export const MAX_ANSWER_TIME = 300000; // 5分
