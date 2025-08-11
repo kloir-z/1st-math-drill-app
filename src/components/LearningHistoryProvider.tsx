@@ -43,6 +43,7 @@ const createDefaultLearningHistory = (): LearningHistory => {
             [ProblemType.SubtractionNoBorrow]: createDefaultProblemTypeStats(),
             [ProblemType.AdditionWithCarry]: createDefaultProblemTypeStats(),
             [ProblemType.SubtractionWithBorrow]: createDefaultProblemTypeStats(),
+            [ProblemType.MixedReview]: createDefaultProblemTypeStats(),
         },
         problemStats: {},
         lastUpdated: new Date().toISOString(),
@@ -51,6 +52,7 @@ const createDefaultLearningHistory = (): LearningHistory => {
             [ProblemType.SubtractionNoBorrow]: createDefaultDailyCount(today),
             [ProblemType.AdditionWithCarry]: createDefaultDailyCount(today),
             [ProblemType.SubtractionWithBorrow]: createDefaultDailyCount(today),
+            [ProblemType.MixedReview]: createDefaultDailyCount(today),
         },
         dailyRecords: {},
         totalAttempts: {} 

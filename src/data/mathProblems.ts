@@ -145,15 +145,6 @@ export const additionWithCarryProblems: MathProblem[] = [
 ];
 
 export const subtractionWithBorrowProblems: MathProblem[] = [
-    // { num1: 10, num2: 1, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 9
-    // { num1: 10, num2: 2, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 8
-    // { num1: 10, num2: 3, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 7
-    // { num1: 10, num2: 4, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 6
-    // { num1: 10, num2: 5, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 5
-    // { num1: 10, num2: 6, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 4
-    // { num1: 10, num2: 7, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 3
-    // { num1: 10, num2: 8, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 2
-    // { num1: 10, num2: 9, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 1
     { num1: 11, num2: 2, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 9
     { num1: 11, num2: 3, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 8
     { num1: 11, num2: 4, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 7
@@ -192,12 +183,21 @@ export const subtractionWithBorrowProblems: MathProblem[] = [
     { num1: 18, num2: 9, operator: '-', type: ProblemType.SubtractionWithBorrow }, // = 9
 ];
 
+// 混合問題リスト（おさらいモード用）
+export const mixedReviewProblems: MathProblem[] = [
+    ...additionNoCarryProblems,
+    ...subtractionNoBorrowProblems,
+    ...additionWithCarryProblems,
+    ...subtractionWithBorrowProblems
+];
+
 // 全ての問題を種類別に管理するオブジェクト
 export const allProblems: Record<ProblemType, MathProblem[]> = {
     [ProblemType.AdditionNoCarry]: additionNoCarryProblems,
     [ProblemType.SubtractionNoBorrow]: subtractionNoBorrowProblems,
     [ProblemType.AdditionWithCarry]: additionWithCarryProblems,
-    [ProblemType.SubtractionWithBorrow]: subtractionWithBorrowProblems
+    [ProblemType.SubtractionWithBorrow]: subtractionWithBorrowProblems,
+    [ProblemType.MixedReview]: mixedReviewProblems
 };
 
 // 問題の答えを計算するユーティリティ関数

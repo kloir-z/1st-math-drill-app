@@ -2,7 +2,8 @@ export enum ProblemType {
     AdditionNoCarry = 'AdditionNoCarry',
     SubtractionNoBorrow = 'SubtractionNoBorrow',
     AdditionWithCarry = 'AdditionWithCarry',
-    SubtractionWithBorrow = 'SubtractionWithBorrow'
+    SubtractionWithBorrow = 'SubtractionWithBorrow',
+    MixedReview = 'MixedReview'
 }
 
 // 演算子の型
@@ -21,5 +22,6 @@ export const ProblemTypeLabels: Record<ProblemType, string> = {
     [ProblemType.AdditionNoCarry]: 'くりあがりのない 足し算',
     [ProblemType.SubtractionNoBorrow]: 'くりさがりのない 引き算',
     [ProblemType.AdditionWithCarry]: 'くりあがりのある 足し算',
-    [ProblemType.SubtractionWithBorrow]: 'くりさがりのある 引き算'
+    [ProblemType.SubtractionWithBorrow]: 'くりさがりのある 引き算',
+    [ProblemType.MixedReview]: 'おさらいモード'
 };

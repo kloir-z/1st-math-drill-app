@@ -21,6 +21,7 @@ const TYPE_COLORS = {
     [ProblemType.SubtractionNoBorrow]: '#ef4444',
     [ProblemType.AdditionWithCarry]: '#22c55e',
     [ProblemType.SubtractionWithBorrow]: '#f59e0b',
+    [ProblemType.MixedReview]: '#8b5cf6',
 };
 
 // 問題の解答セッションを特定する関数
@@ -159,7 +160,9 @@ export const ProblemStats = () => {
                     >
                         すべて
                     </button>
-                    {Object.entries(ProblemTypeLabels).map(([type, label]) => (
+                    {Object.entries(ProblemTypeLabels)
+                        .filter(([type]) => type !== ProblemType.MixedReview)
+                        .map(([type, label]) => (
                         <button
                             key={type}
                             onClick={() => setSelectedType(type as ProblemType)}
