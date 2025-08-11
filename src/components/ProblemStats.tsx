@@ -160,7 +160,9 @@ export const ProblemStats = () => {
                     >
                         すべて
                     </button>
-                    {Object.entries(ProblemTypeLabels).map(([type, label]) => (
+                    {Object.entries(ProblemTypeLabels)
+                        .filter(([type]) => type !== ProblemType.MixedReview)
+                        .map(([type, label]) => (
                         <button
                             key={type}
                             onClick={() => setSelectedType(type as ProblemType)}
