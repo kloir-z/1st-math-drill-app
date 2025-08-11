@@ -17,6 +17,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
   const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
   const [isAnswerVisible, setIsAnswerVisible] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
+  const [isAnswerProcessed, setIsAnswerProcessed] = useState(false);
 
   const { recordAttempt, getDailyCount, history } = useLearningHistory();
   const problemStartTime = useRef<number>(Date.now());
@@ -57,6 +58,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
     setUserInput('');
     setIsCorrect(null);
     setIsAnswerVisible(false);
+    setIsAnswerProcessed(false);
     problemStartTime.current = Date.now();
 
     // 状態更新が完了するまで少し待ってからisTransitioningをfalseにする
@@ -66,11 +68,12 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
   }, [problemType, isTransitioning]);
 
   const handleSubmit = useCallback(() => {
-    if (!currentProblem || !userInput || isTransitioning) return;
+    if (!currentProblem || !userInput || isTransitioning || isAnswerProcessed) return;
 
     const correctAnswer = calculateAnswer(currentProblem);
     const isAnswerCorrect = parseInt(userInput) === correctAnswer;
     setIsCorrect(isAnswerCorrect);
+    setIsAnswerProcessed(true);
 
     const answeredTime = Date.now() - problemStartTime.current;
     recordAttempt(currentProblem, isAnswerCorrect, answeredTime);
@@ -94,8 +97,10 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
       }, 500);
     } else {
       setUserInput('');
+      // 不正解の場合は再入力を可能にするためisAnswerProcessedをリセット
+      setIsAnswerProcessed(false);
     }
-  }, [currentProblem, userInput, isTransitioning, recordAttempt, getNextProblem]);
+  }, [currentProblem, userInput, isTransitioning, isAnswerProcessed, recordAttempt, getNextProblem]);
 
   const handleNumberClick = useCallback((num: number) => {
     if (userInput.length < 2) {

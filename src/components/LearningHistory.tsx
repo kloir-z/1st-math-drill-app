@@ -1,4 +1,3 @@
-// components/LearningHistory.tsx
 import React, { useState } from 'react';
 import { useLearningHistory } from '../hooks/useLearningHistory';
 import { ProblemStats } from './ProblemStats';
