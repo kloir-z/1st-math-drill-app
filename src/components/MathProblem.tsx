@@ -21,6 +21,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
   const { recordAttempt, getDailyCount, history } = useLearningHistory();
   const problemStartTime = useRef<number>(Date.now());
   const problemSelector = useRef<ProblemSelector | null>(null);
+  const nextProblemTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const formatDate = (date: Date) => {
     const month = date.getMonth() + 1;
@@ -42,6 +43,12 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
   const getNextProblem = useCallback(() => {
     if (isTransitioning || !problemSelector.current) return;
     setIsTransitioning(true);
+    
+    // 既存のタイマーがあればクリア
+    if (nextProblemTimeoutRef.current) {
+      clearTimeout(nextProblemTimeoutRef.current);
+      nextProblemTimeoutRef.current = null;
+    }
 
     const problems = allProblems[problemType];
     const nextProblem = problemSelector.current.selectNextProblem(problems);
@@ -52,7 +59,10 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
     setIsAnswerVisible(false);
     problemStartTime.current = Date.now();
 
-    setIsTransitioning(false);
+    // 状態更新が完了するまで少し待ってからisTransitioningをfalseにする
+    setTimeout(() => {
+      setIsTransitioning(false);
+    }, 50);
   }, [problemType, isTransitioning]);
 
   const handleSubmit = useCallback(() => {
@@ -71,7 +81,15 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
 
     if (isAnswerCorrect) {
       setIsAnswerVisible(true);
-      setTimeout(() => {
+      
+      // 既存のタイマーがあればクリア
+      if (nextProblemTimeoutRef.current) {
+        clearTimeout(nextProblemTimeoutRef.current);
+      }
+      
+      // 新しいタイマーをセット
+      nextProblemTimeoutRef.current = setTimeout(() => {
+        nextProblemTimeoutRef.current = null;
         getNextProblem();
       }, 500);
     } else {
