@@ -14,7 +14,8 @@ export interface LearningHistoryContextType {
     recordAttempt: (
         problem: MathProblem,
         isCorrect: boolean,
-        answeredTime: number
+        answeredTime: number,
+        currentProblemType: ProblemType
     ) => void;
     getProblemHistory: (problemId: string) => ProblemHistory | null;
     getProblemTypeStats: (type: ProblemType) => ProblemTypeStats;

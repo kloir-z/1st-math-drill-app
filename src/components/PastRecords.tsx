@@ -104,7 +104,7 @@ export default function PastRecords({ onClose }: { onClose: () => void }) {
                                         <div className="mt-4">
                                             <h4 className="font-bold mb-2">せいかいした もんだいの かず</h4>
                                             {Object.entries(correctCounts)
-                                                .filter(([type, count]) => type !== ProblemType.MixedReview && count > 0)
+                                                .filter(([, count]) => count > 0)
                                                 .map(([type, count]) => (
                                                     <div key={type} className="flex justify-between mb-1">
                                                         <span>{ProblemTypeLabels[type as ProblemType]}:</span>

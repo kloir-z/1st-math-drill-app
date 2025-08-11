@@ -76,7 +76,7 @@ export const MathProblem: React.FC<MathProblemProps> = ({ problemType, onBack })
     setIsAnswerProcessed(true);
 
     const answeredTime = Date.now() - problemStartTime.current;
-    recordAttempt(currentProblem, isAnswerCorrect, answeredTime);
+    recordAttempt(currentProblem, isAnswerCorrect, answeredTime, problemType);
 
     if (problemSelector.current) {
       problemSelector.current.recordAttempt(isAnswerCorrect);

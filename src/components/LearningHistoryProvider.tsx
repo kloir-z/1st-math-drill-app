@@ -93,7 +93,8 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
     const recordAttempt = (
         problem: MathProblem,
         isCorrect: boolean,
-        answeredTime: number
+        answeredTime: number,
+        currentProblemType: ProblemType
     ) => {
         const problemId = generateProblemId(problem);
         const timestamp = new Date().toISOString();
@@ -102,7 +103,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
         const cappedAnsweredTime = Math.min(answeredTime, MAX_ANSWER_TIME);
 
         setHistory(prev => {
-            const prevCount = prev.dailyCounts[problem.type];
+            const prevCount = prev.dailyCounts[currentProblemType];
             const newDailyCount = prevCount.date === today
                 ? {
                     date: today,
@@ -142,12 +143,12 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
 
             const newProblemCounts = {
                 ...currentDailyRecord.problemCounts,
-                [problem.type]: (currentDailyRecord.problemCounts[problem.type] || 0) + 1
+                [currentProblemType]: (currentDailyRecord.problemCounts[currentProblemType] || 0) + 1
             };
 
             const problemRecord: DailyProblemRecord = {
                 problemId,
-                type: problem.type,
+                type: currentProblemType,
                 timestamp,
                 isCorrect,
                 answeredTime: cappedAnsweredTime,
@@ -157,12 +158,12 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
             };
 
             const newTypeStats = {
-                ...prev.problemTypeStats[problem.type],
-                totalAttempts: prev.problemTypeStats[problem.type].totalAttempts + 1,
-                correctAttempts: prev.problemTypeStats[problem.type].correctAttempts + (isCorrect ? 1 : 0),
+                ...prev.problemTypeStats[currentProblemType],
+                totalAttempts: prev.problemTypeStats[currentProblemType].totalAttempts + 1,
+                correctAttempts: prev.problemTypeStats[currentProblemType].correctAttempts + (isCorrect ? 1 : 0),
                 averageAnswerTime:
-                    (prev.problemTypeStats[problem.type].averageAnswerTime * prev.problemTypeStats[problem.type].totalAttempts + cappedAnsweredTime) /
-                    (prev.problemTypeStats[problem.type].totalAttempts + 1),
+                    (prev.problemTypeStats[currentProblemType].averageAnswerTime * prev.problemTypeStats[currentProblemType].totalAttempts + cappedAnsweredTime) /
+                    (prev.problemTypeStats[currentProblemType].totalAttempts + 1),
                 lastAttemptDate: timestamp,
             };
 
@@ -182,7 +183,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                 },
                 problemTypeStats: {
                     ...prev.problemTypeStats,
-                    [problem.type]: newTypeStats,
+                    [currentProblemType]: newTypeStats,
                 },
                 problemStats: {
                     ...prev.problemStats,
@@ -194,7 +195,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                 lastUpdated: timestamp,
                 dailyCounts: {
                     ...prev.dailyCounts,
-                    [problem.type]: newDailyCount,
+                    [currentProblemType]: newDailyCount,
                 },
                 dailyRecords: {
                     ...prev.dailyRecords,

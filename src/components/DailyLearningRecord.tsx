@@ -74,9 +74,7 @@ export const DailyLearningRecord: React.FC = () => {
             {/* 問題種類ごとの正解数 */}
             <div className="mb-4">
                 <h4 className="font-bold mb-2">せいかいした もんだいの かず</h4>
-                {Object.entries(correctProblemCounts)
-                    .filter(([type]) => type !== ProblemType.MixedReview)
-                    .map(([type, count]) => {
+                {Object.entries(correctProblemCounts).map(([type, count]) => {
                     const problemType = type as ProblemType;
                     return (
                         <div key={type} className="flex items-center justify-between mb-1">
