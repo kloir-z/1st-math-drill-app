@@ -28,6 +28,43 @@ const getJapanDate = (): string => {
     const jpTime = new Date(now.getTime() + (9 * 60 * 60 * 1000));
     return jpTime.toISOString().split('T')[0];
 };
+// iOS/Safari対応のLocalStorageセーフガード
+const safeLocalStorage = {
+    getItem: (key: string): string | null => {
+        try {
+            return localStorage.getItem(key);
+        } catch (error) {
+            console.error('LocalStorage getItem error:', error);
+            return null;
+        }
+    },
+    setItem: (key: string, value: string): boolean => {
+        try {
+            localStorage.setItem(key, value);
+            return true;
+        } catch (error) {
+            console.error('LocalStorage setItem error:', error);
+            // Safari プライベートモードやストレージ制限
+            if (error instanceof DOMException && (
+                error.code === 22 || 
+                error.name === 'QuotaExceededError' ||
+                error.name === 'NS_ERROR_DOM_QUOTA_REACHED'
+            )) {
+                console.warn('ストレージ容量不足またはプライベートモード');
+                // 古いデータを削除して再試行
+                try {
+                    localStorage.clear();
+                    localStorage.setItem(key, value);
+                    return true;
+                } catch (retryError) {
+                    console.error('LocalStorage retry failed:', retryError);
+                    return false;
+                }
+            }
+            return false;
+        }
+    }
+};
 
 const createDefaultDailyCount = (today: string): DailyCount => ({
     date: today,
@@ -61,7 +98,7 @@ const createDefaultLearningHistory = (): LearningHistory => {
 
 export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [history, setHistory] = useState<LearningHistory>(() => {
-        const stored = localStorage.getItem(LEARNING_HISTORY_STORAGE_KEY);
+        const stored = safeLocalStorage.getItem(LEARNING_HISTORY_STORAGE_KEY);
         if (stored) {
             try {
                 const parsed: LearningHistory = JSON.parse(stored);
@@ -87,7 +124,10 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
     });
 
     useEffect(() => {
-        localStorage.setItem(LEARNING_HISTORY_STORAGE_KEY, JSON.stringify(history));
+        const success = safeLocalStorage.setItem(LEARNING_HISTORY_STORAGE_KEY, JSON.stringify(history));
+        if (!success) {
+            console.warn('Failed to save learning history to localStorage');
+        }
     }, [history]);
 
     const recordAttempt = (
