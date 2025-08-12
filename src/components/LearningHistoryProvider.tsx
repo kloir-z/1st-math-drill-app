@@ -103,17 +103,44 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
             try {
                 const parsed: LearningHistory = JSON.parse(stored);
                 const today = getJapanDate();
-                if (parsed.dailyCounts[ProblemType.AdditionNoCarry].date !== today) {
+                // dailyCountsの初期化チェック
+                if (!parsed.dailyCounts) {
+                    parsed.dailyCounts = {} as Record<ProblemType, DailyCount>;
+                }
+                
+                // 各問題タイプのdailyCountsを確認・初期化
+                let needsDateUpdate = false;
+                Object.values(ProblemType).forEach((type: ProblemType) => {
+                    if (!parsed.dailyCounts[type]) {
+                        parsed.dailyCounts[type] = createDefaultDailyCount(today);
+                        needsDateUpdate = true;
+                    }
+                });
+                
+                if (!needsDateUpdate && parsed.dailyCounts[ProblemType.AdditionNoCarry] && parsed.dailyCounts[ProblemType.AdditionNoCarry].date !== today) {
                     Object.values(ProblemType).forEach((type: ProblemType) => {
                         parsed.dailyCounts[type] = createDefaultDailyCount(today);
                     });
                 }
+                // totalAttemptsの初期化
                 if (!parsed.totalAttempts) {
                     parsed.totalAttempts = {};
                     Object.entries(parsed.problemHistories).forEach(([problemId, history]) => {
                         parsed.totalAttempts[problemId] = history.attempts.length;
                     });
                 }
+                
+                // problemTypeStatsの初期化チェック
+                if (!parsed.problemTypeStats) {
+                    parsed.problemTypeStats = {} as Record<ProblemType, ProblemTypeStats>;
+                }
+                
+                // 各問題タイプのstatsを確認・初期化
+                Object.values(ProblemType).forEach((type: ProblemType) => {
+                    if (!parsed.problemTypeStats[type]) {
+                        parsed.problemTypeStats[type] = createDefaultProblemTypeStats();
+                    }
+                });
                 return parsed;
             } catch (e) {
                 console.error('Failed to parse learning history:', e);
@@ -143,7 +170,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
         const cappedAnsweredTime = Math.min(answeredTime, MAX_ANSWER_TIME);
 
         setHistory(prev => {
-            const prevCount = prev.dailyCounts[currentProblemType];
+            const prevCount = prev.dailyCounts[currentProblemType] || createDefaultDailyCount(today);
             const newDailyCount = prevCount.date === today
                 ? {
                     date: today,
@@ -197,13 +224,16 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
                 operator: problem.operator
             };
 
+            // problemTypeStatsの安全なアクセス
+            const currentTypeStats = prev.problemTypeStats[currentProblemType] || createDefaultProblemTypeStats();
+            
             const newTypeStats = {
-                ...prev.problemTypeStats[currentProblemType],
-                totalAttempts: prev.problemTypeStats[currentProblemType].totalAttempts + 1,
-                correctAttempts: prev.problemTypeStats[currentProblemType].correctAttempts + (isCorrect ? 1 : 0),
+                ...currentTypeStats,
+                totalAttempts: currentTypeStats.totalAttempts + 1,
+                correctAttempts: currentTypeStats.correctAttempts + (isCorrect ? 1 : 0),
                 averageAnswerTime:
-                    (prev.problemTypeStats[currentProblemType].averageAnswerTime * prev.problemTypeStats[currentProblemType].totalAttempts + cappedAnsweredTime) /
-                    (prev.problemTypeStats[currentProblemType].totalAttempts + 1),
+                    (currentTypeStats.averageAnswerTime * currentTypeStats.totalAttempts + cappedAnsweredTime) /
+                    (currentTypeStats.totalAttempts + 1),
                 lastAttemptDate: timestamp,
             };
 
@@ -258,7 +288,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
     };
 
     const getProblemTypeStats = (type: ProblemType): ProblemTypeStats => {
-        return history.problemTypeStats[type];
+        return history.problemTypeStats[type] || createDefaultProblemTypeStats();
     };
 
     const getProblemStats = (problemId: string): ProblemStats => {
@@ -270,7 +300,7 @@ export const LearningHistoryProvider: React.FC<{ children: React.ReactNode }> = 
     };
 
     const getDailyCount = (type: ProblemType): DailyCount => {
-        return history.dailyCounts[type];
+        return history.dailyCounts[type] || createDefaultDailyCount(getJapanDate());
     };
 
     const clearHistory = () => {
